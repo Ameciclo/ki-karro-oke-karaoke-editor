@@ -126,6 +126,7 @@ class Project
 		bool	importLyricsLRC( const QStringList & readlyrics, Lyrics& lyrics, bool relaxed = false );
 		bool	importLyricsUStar( const QStringList & readlyrics, Lyrics& lyrics );
 		bool	importLyricsTxt( const QStringList & readlyrics, Lyrics& lyrics );
+		bool	importLyricsSRT( const QStringList & readlyrics, Lyrics& lyrics );
 		bool	importLyricsPowerKaraoke( const QStringList & readlyrics, Lyrics& lyrics );
 		bool	importLyricsKOK( const QStringList & readlyrics, Lyrics& lyrics );
         bool    importLyricsKaraokeBuilder( const QStringList & readlyrics, Lyrics& lyrics );

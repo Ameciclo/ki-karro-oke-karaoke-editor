@@ -443,9 +443,9 @@ void MainWindow::setCurrentProject( Project * proj )
 
     m_mediaPlayer = new MediaPlayer();
 
-    connect( m_mediaPlayer, SIGNAL(mediaLoadingFinished(MediaPlayer::State,QString)), this,SLOT(mediaLoadingFinished(MediaPlayer::State,QString)) );
-    connect( m_mediaPlayer, SIGNAL( durationChanged() ), this, SLOT( mediaDurationChanged()) );
-    connect( m_mediaPlayer, SIGNAL(finished()), this, SLOT(playerStop()) );
+    connect( m_mediaPlayer, &MediaPlayer::mediaLoadingFinished, this, &MainWindow::mediaLoadingFinished );
+    connect( m_mediaPlayer, &MediaPlayer::durationChanged, this, &MainWindow::mediaDurationChanged );
+    connect( m_mediaPlayer, &MediaPlayer::finished, this, &MainWindow::playerStop );
 
     m_mediaPlayer->loadMedia( m_project->musicFile(), MediaPlayer::LoadAudioStream );
     m_playerWidget->updatePlayerState( PlayerWidget::Audio_ErrorState);
@@ -556,7 +556,7 @@ void MainWindow::act_projectOpenLyricFile()
 	QString fileName = QFileDialog::getOpenFileName( this,
 			tr("Open a lyric file"),
             QString(),
-            tr("LRC files (*.lrc);;UltraStar/PowerKaraoke/KaraokeBuilder files (*.txt);;KAR/MIDI files (*.mid *.midi *.kar);;KaraFun files (*.kfn);;DEL Karaoke files (*.kok)") );
+            tr("LRC files (*.lrc);;SubRip subtitles (*.srt);;UltraStar/PowerKaraoke/KaraokeBuilder files (*.txt);;KAR/MIDI files (*.mid *.midi *.kar);;KaraFun files (*.kfn);;DEL Karaoke files (*.kok)") );
 
 	if ( fileName.isEmpty() )
 		return;

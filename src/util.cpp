@@ -18,6 +18,7 @@
  **************************************************************************/
 
 #include <QString>
+#include <QStringDecoder>
 #include "util.h"
 #include "dialog_selectencoding.h"
 
@@ -26,6 +27,17 @@ namespace Util
 
 QString convertWithUserEncoding( const QByteArray& data )
 {
+    // Prefer Unicode-aware decoding for modern subtitle/lyric files.
+    // This avoids prompting for encoding on valid UTF-8 files, including BOM-prefixed ones.
+    if ( data.startsWith( "\xEF\xBB\xBF" ) )
+        return QString::fromUtf8( data.constData() + 3, data.size() - 3 );
+
+    QStringDecoder utf8Decoder( QStringDecoder::Utf8 );
+    QString utf8Text = utf8Decoder.decode( data );
+
+    if ( !utf8Decoder.hasError() )
+        return utf8Text;
+
 	// Before we ask the user for the text encoding, run a loop - if all characters there are < 127, this is ASCII,
 	// and we do not need to ask.
 	for ( int i = 0; i < data.size(); i++ )

@@ -116,6 +116,8 @@ class Editor : public QTextEdit
 		QString		validateSpecial( const QString& string );
 		QTextCursor cursorAtPoint( const QPoint& point );
 		qint64		timeForPosition( QTextCursor cur );
+		bool        promptAndSplitLongBlocks();
+		bool        splitLongBlocks(int maxLinesPerBlock);
 
 		// Ensure the cursor is in the middle of the screen if possible
 		void		ensureCursorMiddle();

@@ -336,6 +336,15 @@ void Editor::cursorToLine( int line, int column )
 // validators
 bool Editor::validate( const QFont * font, const QSize * fitsize )
 {
+	if ( promptAndSplitLongBlocks() )
+	{
+		QList<ValidatorError> revalidatedErrors;
+		validate( revalidatedErrors, font, fitsize );
+
+		if ( revalidatedErrors.isEmpty() )
+			return true;
+	}
+
 	QList<ValidatorError> errors;
 	validate( errors, font, fitsize );
 
@@ -350,6 +359,82 @@ bool Editor::validate( const QFont * font, const QSize * fitsize )
 		return false;
 	}
 
+	return true;
+}
+
+bool Editor::promptAndSplitLongBlocks()
+{
+	if ( !pSettings->m_editorSupportBlocks )
+		return false;
+
+	QStringList lines = toPlainText().split( '\n' );
+	int linesInBlock = 0;
+
+	for ( int i = 0; i < lines.size(); ++i )
+	{
+		if ( lines[i].trimmed().isEmpty() )
+		{
+			linesInBlock = 0;
+			continue;
+		}
+
+		linesInBlock++;
+
+		if ( linesInBlock > 4 )
+		{
+			if ( QMessageBox::question( this,
+										tr("Split long blocks automatically?"),
+										tr("Some lyrics blocks contain more than 4 lines.\n\n"
+										   "Do you want to split them automatically by inserting an empty line after every 4 lines?"),
+										QMessageBox::Yes | QMessageBox::No,
+										QMessageBox::Yes ) != QMessageBox::Yes )
+			{
+				return false;
+			}
+
+			return splitLongBlocks( 4 );
+		}
+	}
+
+	return false;
+}
+
+bool Editor::splitLongBlocks( int maxLinesPerBlock )
+{
+	if ( maxLinesPerBlock < 1 )
+		return false;
+
+	QStringList lines = toPlainText().split( '\n' );
+	QStringList updatedLines;
+	int linesInBlock = 0;
+	bool changed = false;
+
+	for ( int i = 0; i < lines.size(); ++i )
+	{
+		const QString& line = lines[i];
+
+		if ( line.trimmed().isEmpty() )
+		{
+			updatedLines.push_back( line );
+			linesInBlock = 0;
+			continue;
+		}
+
+		if ( linesInBlock == maxLinesPerBlock )
+		{
+			updatedLines.push_back( QString() );
+			linesInBlock = 0;
+			changed = true;
+		}
+
+		updatedLines.push_back( line );
+		linesInBlock++;
+	}
+
+	if ( !changed )
+		return false;
+
+	setPlainText( updatedLines.join( "\n" ) );
 	return true;
 }
 

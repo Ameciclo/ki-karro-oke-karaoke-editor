@@ -47,6 +47,7 @@ class MediaPlayer : public QObject
             StatePaused,
             StateFailed     // Media failed to load
         };
+        Q_ENUM(State)
 
         // Options used in loadMedia
         enum
@@ -184,5 +185,7 @@ class MediaPlayer : public QObject
         QString     m_mediaArtist;
         QString     m_mediaTitle;
 };
+
+Q_DECLARE_METATYPE(MediaPlayer::State)
 
 #endif // MEDIAPLAYER_H

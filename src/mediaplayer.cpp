@@ -32,6 +32,9 @@
 MediaPlayer::MediaPlayer( QObject * parent )
     : QObject( parent )
 {
+    qRegisterMetaType<MediaPlayer::State>("MediaPlayer::State");
+    qRegisterMetaType<MediaPlayer::State>("State");
+
     m_gst_pipeline = 0;
     m_gst_bus = 0;
     m_gst_source = 0;

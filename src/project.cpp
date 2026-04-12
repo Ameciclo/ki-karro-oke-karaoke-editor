@@ -33,6 +33,28 @@
 #include "kfn_file_parser.h"
 #include "util.h"
 
+static qint64 parseSRTTimestamp(const QString &value)
+{
+    QRegularExpression regex("^\\s*(\\d+):(\\d+):(\\d+)[,.](\\d+)\\s*$");
+    QRegularExpressionMatch match = regex.match(value);
+
+    if ( !match.hasMatch() )
+        return -1;
+
+    QString millisString = match.captured(4);
+
+    while ( millisString.length() < 3 )
+        millisString += "0";
+
+    if ( millisString.length() > 3 )
+        millisString = millisString.left(3);
+
+    return match.captured(1).toLongLong() * 3600000LL
+            + match.captured(2).toLongLong() * 60000LL
+            + match.captured(3).toLongLong() * 1000LL
+            + millisString.toLongLong();
+}
+
 // Project data enum
 // Formats info:
 // UltraStar: http://ultrastardeluxe.xtremeweb-hosting.net/wiki/doku.php?id=editor:txt_file
@@ -847,6 +869,12 @@ bool Project::importLyrics( const QString& filename )
 		success = importLyricsTxt( linedtext, lyr );
 		lyr.endLyrics();
 	}
+	else if ( filename.endsWith( "srt", Qt::CaseInsensitive ) )
+	{
+		lyr.beginLyrics();
+		success = importLyricsSRT( linedtext, lyr );
+		lyr.endLyrics();
+	}
 	else if ( filename.endsWith( "kok" ) )
 	{
 		lyr.beginLyrics();
@@ -1030,6 +1058,91 @@ bool Project::importLyricsTxt( const QStringList & readlyrics, Lyrics& lyrics )
                            QObject::tr("Invalid text file"),
                            QObject::tr("This file is not a valid UltraStar nor PowerKaraoke lyric file") );
     return false;
+}
+
+bool Project::importLyricsSRT( const QStringList & readlyrics, Lyrics& lyrics )
+{
+    lyrics.clear();
+
+    if ( readlyrics.isEmpty() )
+        return false;
+
+    int i = 0;
+    bool importedAnyCue = false;
+
+    while ( i < readlyrics.size() )
+    {
+        QString line = readlyrics[i].trimmed();
+
+        if ( line.isEmpty() )
+        {
+            i++;
+            continue;
+        }
+
+        if ( line.indexOf( QRegularExpression("^\\d+$") ) != -1 )
+        {
+            i++;
+
+            if ( i >= readlyrics.size() )
+                break;
+
+            line = readlyrics[i].trimmed();
+        }
+
+        QRegularExpression timingRegex("^(.+?)\\s*-->\\s*(.+?)\\s*$");
+        QRegularExpressionMatch timingMatch = timingRegex.match( line );
+
+        if ( !timingMatch.hasMatch() )
+        {
+            QMessageBox::critical( 0,
+                                   QObject::tr("Invalid SRT file"),
+                                   QObject::tr("This file is not a valid SRT subtitle file; expected a timing line near line %1.").arg( i + 1 ) );
+            return false;
+        }
+
+        qint64 start = parseSRTTimestamp( timingMatch.captured(1) );
+        qint64 end = parseSRTTimestamp( timingMatch.captured(2) );
+
+        if ( start < 0 || end < 0 || end < start )
+        {
+            QMessageBox::critical( 0,
+                                   QObject::tr("Invalid SRT file"),
+                                   QObject::tr("This file is not a valid SRT subtitle file; invalid timing at line %1.").arg( i + 1 ) );
+            return false;
+        }
+
+        QStringList textLines;
+        i++;
+
+        while ( i < readlyrics.size() && !readlyrics[i].trimmed().isEmpty() )
+        {
+            textLines.push_back( readlyrics[i].trimmed() );
+            i++;
+        }
+
+        QString text = textLines.join( " " ).trimmed();
+
+        if ( !text.isEmpty() )
+        {
+            lyrics.curLyricSetTime( start );
+            lyrics.curLyricAppendText( text );
+            lyrics.curLyricAdd();
+            lyrics.curLyricSetTime( end );
+            lyrics.curLyricAddEndOfLine();
+            importedAnyCue = true;
+        }
+    }
+
+    if ( !importedAnyCue )
+    {
+        QMessageBox::critical( 0,
+                               QObject::tr("Invalid SRT file"),
+                               QObject::tr("This file does not contain any subtitle entries to import.") );
+        return false;
+    }
+
+    return true;
 }
 
 static int powerKaraokeTime( QString time )

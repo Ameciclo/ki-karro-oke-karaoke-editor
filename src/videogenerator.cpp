@@ -104,9 +104,8 @@ void VideoGenerator::generate( PlayerWidget * widget )
     mProgress.lblTime->setText( "0:00.00" );
 
     m_encoder = new MediaPlayer();
-    connect( m_encoder, SIGNAL(mediaLoadingFinished(MediaPlayer::State,QString)), this, SLOT(mediaLoadingFinished(MediaPlayer::State,QString)) );
-    connect( m_encoder, SIGNAL(durationChanged()), this, SLOT(mediaDurationChanged()) );
-    connect( m_encoder, SIGNAL(finished()), this, SLOT(mediaFinished()) );
+    connect( m_encoder, &MediaPlayer::mediaLoadingFinished, this, &VideoGenerator::mediaLoadingFinished );
+    connect( m_encoder, &MediaPlayer::finished, this, &VideoGenerator::mediaFinished );
 
     // Launch the encoder process
     m_encoder->prepareVideoEncoder( m_project->musicFile(),
