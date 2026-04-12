@@ -1078,51 +1078,84 @@ void Editor::splitLine()
     cur.endEditBlock();
 }
 
-bool Editor::moveToTimingTag( bool forward )
+qint64 Editor::moveToTimingLine( qint64 currentTime, bool forward )
 {
-	QString text = toPlainText();
-	QRegularExpression pattern( "\\[(\\d+:\\d+\\.\\d+)\\]" );
-	QRegularExpressionMatchIterator it = pattern.globalMatch( text );
-	int currentPos = textCursor().position();
-	int targetPos = -1;
+    static const qint64 PREVIOUS_LINE_RESTART_THRESHOLD = 1200;
 
-	while ( it.hasNext() )
-	{
-		QRegularExpressionMatch match = it.next();
-		int start = match.capturedStart();
+    QStringList lines = toPlainText().split( '\n' );
+    QRegularExpression pattern( "^\\[(\\d+:\\d+\\.\\d+)\\]" );
+    QVector<int> linePositions;
+    QVector<qint64> lineTimes;
+    int absolutePos = 0;
 
-		if ( forward )
-		{
-			if ( start > currentPos )
-			{
-				targetPos = start;
-				break;
-			}
-		}
-		else if ( start < currentPos )
-		{
-			targetPos = start;
-		}
-	}
+    for ( int i = 0; i < lines.size(); ++i )
+    {
+        QRegularExpressionMatch match = pattern.match( lines[i] );
 
-	if ( targetPos == -1 )
-		return false;
+        if ( match.hasMatch() )
+        {
+            linePositions.push_back( absolutePos + match.capturedStart() );
+            lineTimes.push_back( timeToMark( match.captured( 1 ) ) );
+        }
+
+        absolutePos += lines[i].length() + 1;
+    }
+
+    if ( lineTimes.isEmpty() )
+        return -1;
+
+    int targetIndex = -1;
+
+    if ( forward )
+    {
+        for ( int i = 0; i < lineTimes.size(); ++i )
+        {
+            if ( lineTimes[i] > currentTime )
+            {
+                targetIndex = i;
+                break;
+            }
+        }
+    }
+    else
+    {
+        int currentLineIndex = -1;
+
+        for ( int i = 0; i < lineTimes.size(); ++i )
+        {
+            if ( lineTimes[i] <= currentTime )
+                currentLineIndex = i;
+            else
+                break;
+        }
+
+        if ( currentLineIndex == -1 )
+            return -1;
+
+        if ( currentTime - lineTimes[currentLineIndex] > PREVIOUS_LINE_RESTART_THRESHOLD )
+            targetIndex = currentLineIndex;
+        else
+            targetIndex = currentLineIndex - 1;
+    }
+
+	if ( targetIndex < 0 || targetIndex >= lineTimes.size() )
+		return -1;
 
 	QTextCursor cur = textCursor();
-	cur.setPosition( targetPos );
+	cur.setPosition( linePositions[targetIndex] );
 	setTextCursor( cur );
 	ensureCursorMiddle();
-	return true;
+	return lineTimes[targetIndex];
 }
 
-void Editor::goToNextTimingTag()
+qint64 Editor::goToNextTimingTag( qint64 currentTime )
 {
-	moveToTimingTag( true );
+	return moveToTimingLine( currentTime, true );
 }
 
-void Editor::goToPreviousTimingTag()
+qint64 Editor::goToPreviousTimingTag( qint64 currentTime )
 {
-	moveToTimingTag( false );
+	return moveToTimingLine( currentTime, false );
 }
 
 void Editor::followingTick(qint64 tick)
