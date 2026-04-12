@@ -101,7 +101,7 @@ class Settings
 		QColor		m_previewBackground;
 		QColor		m_previewTextInactive;
 		QColor		m_previewTextActive;
-        bool        m_previewSlidingLinesMode;
+        int         m_previewLayoutMode;
 
         // Registration info
         QString         registeredName;

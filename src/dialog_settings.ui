@@ -645,14 +645,50 @@ p, li { white-space: pre-wrap; }
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="cbPreviewSlidingLines">
-         <property name="whatsThis">
-          <string>If enabled, the preview/test window stops treating empty lines as rigid page separators and gradually replaces already sung lines with upcoming lines from the following paragraph.</string>
-         </property>
-         <property name="text">
-          <string>Use sliding lines mode in preview/test window</string>
-         </property>
-        </widget>
+        <layout class="QHBoxLayout" name="horizontalLayout_previewMode">
+         <item>
+          <widget class="QLabel" name="labelPreviewLayoutMode">
+           <property name="text">
+            <string>Mode:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="boxPreviewLayoutMode">
+           <property name="whatsThis">
+            <string>Choose how lyrics are arranged in the preview/test window.</string>
+           </property>
+           <item>
+            <property name="text">
+             <string>Standard</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Sliding lines</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Substitute lines</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacerPreviewMode">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>79</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
        </item>
        <item>
         <spacer name="verticalSpacer_2">

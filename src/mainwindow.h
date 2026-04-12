@@ -34,6 +34,8 @@ class PlayerWidget;
 class TestWindow;
 class RecentFiles;
 class QAction;
+class QActionGroup;
+class QMenu;
 
 
 class MainWindow : public QMainWindow, public Ui::MainWindow
@@ -86,6 +88,9 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 
 		void	act_settingsGeneral();
 		void	act_settingsShowPlayer( bool checked );
+        void    act_settingsPreviewModeStandard();
+        void    act_settingsPreviewModeSliding();
+        void    act_settingsPreviewModeSubstitute();
 
 		void	act_helpAbout();
 		void	act_helpRegistration();
@@ -119,6 +124,8 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void	checkNewVersionAvailable();
 		void	connectActions();
 		void	createToolbars();
+        void    setPreviewLayoutMode( int mode );
+        void    syncPreviewLayoutModeActions();
 		void	setCurrentProject( Project * proj );
 		bool	saveProject( const QString& filename );
 		bool	loadProject( const QString& file );
@@ -138,6 +145,11 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		RecentFiles			*	m_recentFiles;
 		QAction             *   m_actionPrevTimingTag;
 		QAction             *   m_actionNextTimingTag;
+        QMenu               *   m_menuModes;
+        QActionGroup        *   m_previewModeGroup;
+        QAction             *   m_actionPreviewModeStandard;
+        QAction             *   m_actionPreviewModeSliding;
+        QAction             *   m_actionPreviewModeSubstitute;
 		QString					m_projectFile;
 
 		// Validator icons

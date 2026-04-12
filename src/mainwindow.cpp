@@ -24,6 +24,7 @@
 #include <QFileDialog>
 #include <QWhatsThis>
 #include <QDateTime>
+#include <QActionGroup>
 #include <QColorDialog>
 #include <QDesktopServices>
 #include <QUrl>
@@ -74,6 +75,24 @@ MainWindow::MainWindow()
     menuEdit->insertAction( actionAdd_eol_timing_marks, m_actionNextTimingTag );
     menuEdit->insertSeparator( actionAdd_eol_timing_marks );
 
+    m_menuModes = new QMenu( tr("Modes"), this );
+    m_previewModeGroup = new QActionGroup( this );
+    m_previewModeGroup->setExclusive( true );
+
+    m_actionPreviewModeStandard = m_menuModes->addAction( tr("Standard") );
+    m_actionPreviewModeSliding = m_menuModes->addAction( tr("Sliding lines") );
+    m_actionPreviewModeSubstitute = m_menuModes->addAction( tr("Substitute lines") );
+
+    m_actionPreviewModeStandard->setCheckable( true );
+    m_actionPreviewModeSliding->setCheckable( true );
+    m_actionPreviewModeSubstitute->setCheckable( true );
+
+    m_previewModeGroup->addAction( m_actionPreviewModeStandard );
+    m_previewModeGroup->addAction( m_actionPreviewModeSliding );
+    m_previewModeGroup->addAction( m_actionPreviewModeSubstitute );
+
+    menuSettings->insertMenu( actionShow_Player_dock_wingow, m_menuModes );
+
 	// Initialize stuff
 	m_project = 0;
 	m_testWindow = 0;
@@ -111,6 +130,7 @@ MainWindow::MainWindow()
     connect( &m_playerUIupdateTimer, SIGNAL(timeout()), this, SLOT(playerWidget_updateUI()) );
 
 	// Update window state
+    syncPreviewLayoutModeActions();
 	updateState();
 
 	checkNewVersionAvailable();
@@ -179,6 +199,9 @@ void MainWindow::connectActions()
 	connect( actionClear_text, SIGNAL( triggered()), this, SLOT( act_editClearText()) );
 	connect( actionTrimspaces, SIGNAL( triggered()), this, SLOT( act_editTrimspaces()) );
 	connect( actionGeneral, SIGNAL( triggered()), this, SLOT(act_settingsGeneral()) );
+	connect( m_actionPreviewModeStandard, SIGNAL( triggered()), this, SLOT(act_settingsPreviewModeStandard()) );
+	connect( m_actionPreviewModeSliding, SIGNAL( triggered()), this, SLOT(act_settingsPreviewModeSliding()) );
+	connect( m_actionPreviewModeSubstitute, SIGNAL( triggered()), this, SLOT(act_settingsPreviewModeSubstitute()) );
 	connect( actionSplit_current_line, SIGNAL( triggered()), this, SLOT(act_editSplitLine()) );
 	connect( actionAbout, SIGNAL( triggered()), this, SLOT(act_helpAbout()) );
 	connect( actionProject_settings, SIGNAL( triggered()), this, SLOT(act_projectSettings()) );
@@ -705,6 +728,22 @@ void MainWindow::act_projectSettings()
 void MainWindow::act_settingsGeneral()
 {
 	pSettings->edit();
+    syncPreviewLayoutModeActions();
+}
+
+void MainWindow::act_settingsPreviewModeStandard()
+{
+    setPreviewLayoutMode( 0 );
+}
+
+void MainWindow::act_settingsPreviewModeSliding()
+{
+    setPreviewLayoutMode( 1 );
+}
+
+void MainWindow::act_settingsPreviewModeSubstitute()
+{
+    setPreviewLayoutMode( 2 );
 }
 
 
@@ -801,6 +840,20 @@ void MainWindow::act_settingsShowPlayer( bool checked )
         m_playerWidget->show();
 	else
         m_playerWidget->hide();
+}
+
+void MainWindow::setPreviewLayoutMode( int mode )
+{
+    pSettings->m_previewLayoutMode = mode;
+    QSettings().setValue( "preview/layoutmode", mode );
+    syncPreviewLayoutModeActions();
+}
+
+void MainWindow::syncPreviewLayoutModeActions()
+{
+    m_actionPreviewModeStandard->setChecked( pSettings->m_previewLayoutMode == 0 );
+    m_actionPreviewModeSliding->setChecked( pSettings->m_previewLayoutMode == 1 );
+    m_actionPreviewModeSubstitute->setChecked( pSettings->m_previewLayoutMode == 2 );
 }
 
 void MainWindow::visibilityPlayer( bool visible )

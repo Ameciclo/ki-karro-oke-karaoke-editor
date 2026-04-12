@@ -70,7 +70,7 @@ void LyricsWidget::paintEvent( QPaintEvent * )
 void LyricsWidget::setLyrics( const Lyrics& lyrics, const QString& artist, const QString& title )
 {
 	TextRenderer * re = new TextRenderer( 720, 480 );
-    re->setLayoutMode( pSettings->m_previewSlidingLinesMode ? TextRenderer::LayoutSlidingLines : TextRenderer::LayoutPaged );
+    re->setLayoutMode( (TextRenderer::LayoutMode) pSettings->m_previewLayoutMode );
 	re->setLyrics( lyrics );
 	re->setPreambleData( 5, 5000, 10 );
 

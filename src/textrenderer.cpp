@@ -840,6 +840,80 @@ TextRenderer::LyricBlockInfo TextRenderer::buildSlidingWindow( int anchorLine, i
     return windowInfo;
 }
 
+TextRenderer::LyricBlockInfo TextRenderer::buildSubstituteWindow( qint64 tickmark, int * currentLine, int * windowPos, int * windowKey ) const
+{
+    LyricBlockInfo windowInfo;
+    *currentLine = -1;
+    *windowPos = -1;
+    *windowKey = -1;
+
+    if ( m_lyricLines.isEmpty() )
+        return windowInfo;
+
+    int completedLines = 0;
+
+    while ( completedLines < m_lyricLines.size() && m_lyricLines[completedLines].timeend < tickmark )
+        completedLines++;
+
+    int nextLine = completedLines;
+
+    if ( nextLine >= m_lyricLines.size() )
+        nextLine = m_lyricLines.size() - 1;
+
+    int blockBase = (completedLines / SLIDING_WINDOW_LINES) * SLIDING_WINDOW_LINES;
+    int replacedSlots = completedLines % SLIDING_WINDOW_LINES;
+    int nextBase = blockBase + SLIDING_WINDOW_LINES;
+    int linesAdded = 0;
+
+    for ( int slot = 0; slot < SLIDING_WINDOW_LINES; ++slot )
+    {
+        int lineIndex = (slot < replacedSlots) ? (nextBase + slot) : (blockBase + slot);
+
+        if ( lineIndex < 0 || lineIndex >= m_lyricLines.size() )
+            continue;
+
+        const LyricBlockInfo& lineInfo = m_lyricLines[lineIndex];
+        int textOffset = windowInfo.text.size();
+
+        if ( linesAdded == 0 )
+            windowInfo.timestart = lineInfo.timestart;
+
+        windowInfo.timeend = qMax( windowInfo.timeend, lineInfo.timeend );
+        windowInfo.text += lineInfo.text;
+
+        for ( auto it = lineInfo.offsets.begin(); it != lineInfo.offsets.end(); ++it )
+            windowInfo.offsets[it.key()] = textOffset + it.value();
+
+        for ( auto it = lineInfo.colors.begin(); it != lineInfo.colors.end(); ++it )
+            windowInfo.colors[textOffset + it.key()] = it.value();
+
+        for ( auto it = lineInfo.fonts.begin(); it != lineInfo.fonts.end(); ++it )
+            windowInfo.fonts[textOffset + it.key()] = it.value();
+
+        if ( tickmark >= lineInfo.timestart && tickmark <= lineInfo.timeend )
+        {
+            *currentLine = lineIndex;
+
+            QMap< qint64, unsigned int >::const_iterator it = lineInfo.offsets.find( tickmark );
+
+            if ( it == lineInfo.offsets.end() )
+                it = lineInfo.offsets.lowerBound( tickmark );
+
+            if ( it != lineInfo.offsets.end() )
+                *windowPos = textOffset + it.value();
+        }
+
+        if ( linesAdded < SLIDING_WINDOW_LINES - 1 )
+            windowInfo.text += "\n";
+
+        windowInfo.verticalAlignment = lineInfo.verticalAlignment;
+        linesAdded++;
+    }
+
+    *windowKey = blockBase * 10 + replacedSlots;
+    return windowInfo;
+}
+
 int TextRenderer::update( qint64 timing )
 {
 	int result = UPDATE_COLORCHANGE;
@@ -850,9 +924,15 @@ int TextRenderer::update( qint64 timing )
 	int blockid = lyricForTime( timing, &sungpos );
     int slidingCurrentLine = -1;
     int slidingAnchor = -1;
+    int substituteCurrentLine = -1;
+    int substituteWindowPos = -1;
+    int substituteWindowKey = -1;
+    LyricBlockInfo substituteWindow;
 
     if ( m_layoutMode == LayoutSlidingLines && blockid != 0 )
         slidingAnchor = slidingAnchorForTime( timing, &slidingCurrentLine, &sungpos );
+    else if ( m_layoutMode == LayoutSubstituteLines && blockid != 0 )
+        substituteWindow = buildSubstituteWindow( timing, &substituteCurrentLine, &substituteWindowPos, &substituteWindowKey );
 /*
 	if ( blockid != -1 )
 	{
@@ -898,12 +978,15 @@ int TextRenderer::update( qint64 timing )
 	if ( !m_forceRedraw && !redrawPreamble && !background_updated )
 	{
 		// Did lyrics change at all?
-		if ( ((slidingAnchor != -1) ? slidingAnchor : blockid) == m_lastBlockPlayed && sungpos == m_lastPosition )
+        int displayKey = (substituteWindowKey != -1) ? substituteWindowKey : ((slidingAnchor != -1) ? slidingAnchor : blockid);
+        int displayPos = (substituteWindowKey != -1) ? substituteWindowPos : sungpos;
+
+		if ( displayKey == m_lastBlockPlayed && displayPos == m_lastPosition )
 			return UPDATE_NOCHANGE;
 
 		// If the new lyrics is empty, but we just finished playing something, keep it for 5 more seconds
 		// (i.e. post-delay)
-		if ( blockid == -1 && slidingAnchor == -1 && timing - m_lastSungTime < 5000 )
+		if ( blockid == -1 && slidingAnchor == -1 && substituteWindowKey == -1 && timing - m_lastSungTime < 5000 )
 			return UPDATE_NOCHANGE;
 	}
 
@@ -911,13 +994,19 @@ int TextRenderer::update( qint64 timing )
 	drawBackground( timing );
 
 	// Did we get lyrics?
-	if ( blockid != -1 || slidingAnchor != -1 )
+	if ( blockid != -1 || slidingAnchor != -1 || substituteWindowKey != -1 )
 	{
         QRect imgrect;
         LyricBlockInfo slidingWindow;
         int windowPos = sungpos;
 
-        if ( slidingAnchor != -1 )
+        if ( substituteWindowKey != -1 )
+        {
+            m_lyricBlocks.push_back( substituteWindow );
+            imgrect = boundingRect( m_lyricBlocks.size() - 1, m_renderFont );
+            m_lyricBlocks.pop_back();
+        }
+        else if ( slidingAnchor != -1 )
         {
             slidingWindow = buildSlidingWindow( slidingAnchor, slidingCurrentLine, sungpos, &windowPos );
             m_lyricBlocks.push_back( slidingWindow );
@@ -941,7 +1030,9 @@ int TextRenderer::update( qint64 timing )
 		}
 
 		// Draw the lyrics
-        if ( slidingAnchor != -1 )
+        if ( substituteWindowKey != -1 )
+            drawLyrics( substituteWindow, substituteWindowPos, imgrect );
+        else if ( slidingAnchor != -1 )
             drawLyrics( slidingWindow, windowPos, imgrect );
         else
             drawLyrics( blockid, sungpos, imgrect );
@@ -952,7 +1043,10 @@ int TextRenderer::update( qint64 timing )
 	}
 
 	// Is the text change significant enough to warrant full screen redraw?
-	if ( ((slidingAnchor != -1) ? slidingAnchor : blockid) != m_lastBlockPlayed || m_forceRedraw )
+    int displayKey = (substituteWindowKey != -1) ? substituteWindowKey : ((slidingAnchor != -1) ? slidingAnchor : blockid);
+    int displayPos = (substituteWindowKey != -1) ? substituteWindowPos : sungpos;
+
+	if ( displayKey != m_lastBlockPlayed || m_forceRedraw )
 	{
 		if ( result != UPDATE_RESIZED )
 			result = UPDATE_FULL;
@@ -960,8 +1054,8 @@ int TextRenderer::update( qint64 timing )
 
 	//saveImage();
 
-	m_lastBlockPlayed = (slidingAnchor != -1) ? slidingAnchor : blockid;
-	m_lastPosition = sungpos;
+	m_lastBlockPlayed = displayKey;
+	m_lastPosition = displayPos;
 
 	m_forceRedraw = false;
 	return result;

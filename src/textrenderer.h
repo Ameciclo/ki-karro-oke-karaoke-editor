@@ -56,7 +56,8 @@ class TextRenderer : public LyricsRenderer
         enum LayoutMode
         {
             LayoutPaged = 0,
-            LayoutSlidingLines = 1
+            LayoutSlidingLines = 1,
+            LayoutSubstituteLines = 2
         };
 
 		TextRenderer( int width, int height );
@@ -112,6 +113,7 @@ class TextRenderer : public LyricsRenderer
 		int		lyricForTime( qint64 tickmark, int * sungpos );
         int     slidingAnchorForTime( qint64 tickmark, int * currentLine, int * sungpos );
         LyricBlockInfo buildSlidingWindow( int anchorLine, int currentLine, int sungpos, int * windowPos ) const;
+        LyricBlockInfo buildSubstituteWindow( qint64 tickmark, int * currentLine, int * windowPos, int * windowKey ) const;
 		QString	titleScreen() const;
 		void	fixActionSequences( QString& block );
 		void	drawLyrics( int blockid, int pos, const QRect& boundingRect );
