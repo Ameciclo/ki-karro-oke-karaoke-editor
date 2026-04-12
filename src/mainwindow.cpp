@@ -521,12 +521,36 @@ void MainWindow::act_editInsertColorChange()
 
 void MainWindow::act_editPreviousTimingTag()
 {
-	editor->goToPreviousTimingTag();
+    qint64 timing = editor->goToPreviousTimingTag( m_mediaPlayer->position() );
+
+    if ( timing != -1 )
+    {
+        playerSeekToTime( timing );
+
+        if ( m_mediaPlayer->isMediaReady() )
+        {
+            m_mediaPlayer->play();
+            m_playerUIupdateTimer.start();
+            m_playerWidget->updatePlayerState( PlayerWidget::Audio_PlayingState );
+        }
+    }
 }
 
 void MainWindow::act_editNextTimingTag()
 {
-	editor->goToNextTimingTag();
+    qint64 timing = editor->goToNextTimingTag( m_mediaPlayer->position() );
+
+    if ( timing != -1 )
+    {
+        playerSeekToTime( timing );
+
+        if ( m_mediaPlayer->isMediaReady() )
+        {
+            m_mediaPlayer->play();
+            m_playerUIupdateTimer.start();
+            m_playerWidget->updatePlayerState( PlayerWidget::Audio_PlayingState );
+        }
+    }
 }
 
 void MainWindow::act_editInsertBackgroundColorChange()
