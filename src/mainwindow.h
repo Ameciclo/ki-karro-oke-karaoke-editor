@@ -33,6 +33,7 @@ class ViewWidget;
 class PlayerWidget;
 class TestWindow;
 class RecentFiles;
+class QAction;
 
 
 class MainWindow : public QMainWindow, public Ui::MainWindow
@@ -67,6 +68,8 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void	act_editInsertVideo();
 		void	act_editInsertColorChange();
         void	act_editInsertBackgroundColorChange();
+		void	act_editPreviousTimingTag();
+		void	act_editNextTimingTag();
 		void	act_addMissingTimingMarks();
 		void	act_adjustTiming();
 
@@ -133,6 +136,8 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		ViewWidget			*	m_viewer;
 		TestWindow			*	m_testWindow;
 		RecentFiles			*	m_recentFiles;
+		QAction             *   m_actionPrevTimingTag;
+		QAction             *   m_actionNextTimingTag;
 		QString					m_projectFile;
 
 		// Validator icons

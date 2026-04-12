@@ -62,6 +62,18 @@ MainWindow::MainWindow()
 	// Call UIC-generated code
 	setupUi( this );
 
+    m_actionPrevTimingTag = new QAction( QIcon(":images/dryicons_rewind.png"), tr("Previous mark"), this );
+    m_actionPrevTimingTag->setShortcut( QKeySequence( "Alt+Up" ) );
+    m_actionPrevTimingTag->setToolTip( tr("Jump to previous timing mark") );
+
+    m_actionNextTimingTag = new QAction( QIcon(":images/dryicons_forward.png"), tr("Next mark"), this );
+    m_actionNextTimingTag->setShortcut( QKeySequence( "Alt+Down" ) );
+    m_actionNextTimingTag->setToolTip( tr("Jump to next timing mark") );
+
+    menuEdit->insertAction( actionAdd_eol_timing_marks, m_actionPrevTimingTag );
+    menuEdit->insertAction( actionAdd_eol_timing_marks, m_actionNextTimingTag );
+    menuEdit->insertSeparator( actionAdd_eol_timing_marks );
+
 	// Initialize stuff
 	m_project = 0;
 	m_testWindow = 0;
@@ -183,6 +195,8 @@ void MainWindow::connectActions()
     connect( actionInsert_video, SIGNAL(triggered()), this, SLOT(act_editInsertVideo() ) );
 	connect( actionInsert_color_change, SIGNAL(triggered(bool)), this, SLOT(act_editInsertColorChange() ) );
     connect( actionInsert_background_color_change, SIGNAL(triggered()), this, SLOT(act_editInsertBackgroundColorChange()) );
+    connect( m_actionPrevTimingTag, SIGNAL(triggered()), this, SLOT(act_editPreviousTimingTag()) );
+    connect( m_actionNextTimingTag, SIGNAL(triggered()), this, SLOT(act_editNextTimingTag()) );
     connect( actionAdd_eol_timing_marks, SIGNAL(triggered()), this, SLOT(act_addMissingTimingMarks() ) );
     connect( actionTime_adjustment, SIGNAL(triggered()), this, SLOT(act_adjustTiming() ) );
 
@@ -217,6 +231,8 @@ void MainWindow::createToolbars()
 	editor->addSeparator();
 	editor->addAction( actionInsert_tag );
 	editor->addAction( actionRemove_tag );
+	editor->addAction( m_actionPrevTimingTag );
+	editor->addAction( m_actionNextTimingTag );
 	editor->addSeparator();
 	editor->addAction( actionValidate_lyrics );
 	editor->addAction( actionView_lyric_file );
@@ -503,6 +519,16 @@ void MainWindow::act_editInsertColorChange()
         editor->insertColorChangeTag( newcolor.name() );
 }
 
+void MainWindow::act_editPreviousTimingTag()
+{
+	editor->goToPreviousTimingTag();
+}
+
+void MainWindow::act_editNextTimingTag()
+{
+	editor->goToNextTimingTag();
+}
+
 void MainWindow::act_editInsertBackgroundColorChange()
 {
     QColor newcolor = QColorDialog::getColor();
@@ -702,6 +728,8 @@ void MainWindow::updateState()
 	actionProject_settings->setEnabled( project_available );
 	actionView_lyric_file->setEnabled( project_ready );
 	actionAdd_eol_timing_marks->setEnabled( project_ready );
+    m_actionPrevTimingTag->setEnabled( project_available );
+    m_actionNextTimingTag->setEnabled( project_available );
 
 	editor->setEnabled( project_available );
 

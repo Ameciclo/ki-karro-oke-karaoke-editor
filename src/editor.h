@@ -104,6 +104,8 @@ class Editor : public QTextEdit
 	public slots:
 		void	textModified();
 		void	splitLine();
+		void	goToNextTimingTag();
+		void	goToPreviousTimingTag();
         void    followingTick( qint64 tick );
 
 	protected:
@@ -120,6 +122,7 @@ class Editor : public QTextEdit
 		bool        promptAndSplitLongBlocks();
 		bool        splitLongBlocks(int maxLinesPerBlock);
 		void        updatePlaybackTagHighlight( int tagPosition );
+		bool        moveToTimingTag( bool forward );
 
 		// Ensure the cursor is in the middle of the screen if possible
 		void		ensureCursorMiddle();

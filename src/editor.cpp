@@ -1078,6 +1078,53 @@ void Editor::splitLine()
     cur.endEditBlock();
 }
 
+bool Editor::moveToTimingTag( bool forward )
+{
+	QString text = toPlainText();
+	QRegularExpression pattern( "\\[(\\d+:\\d+\\.\\d+)\\]" );
+	QRegularExpressionMatchIterator it = pattern.globalMatch( text );
+	int currentPos = textCursor().position();
+	int targetPos = -1;
+
+	while ( it.hasNext() )
+	{
+		QRegularExpressionMatch match = it.next();
+		int start = match.capturedStart();
+
+		if ( forward )
+		{
+			if ( start > currentPos )
+			{
+				targetPos = start;
+				break;
+			}
+		}
+		else if ( start < currentPos )
+		{
+			targetPos = start;
+		}
+	}
+
+	if ( targetPos == -1 )
+		return false;
+
+	QTextCursor cur = textCursor();
+	cur.setPosition( targetPos );
+	setTextCursor( cur );
+	ensureCursorMiddle();
+	return true;
+}
+
+void Editor::goToNextTimingTag()
+{
+	moveToTimingTag( true );
+}
+
+void Editor::goToPreviousTimingTag()
+{
+	moveToTimingTag( false );
+}
+
 void Editor::followingTick(qint64 tick)
 {
     // Iterate through all the timing marks
