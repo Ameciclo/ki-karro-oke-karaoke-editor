@@ -814,6 +814,29 @@ static bool isTimingMark( const QString& text, int * length = 0 )
 	return false;
 }
 
+static qint64 timingMarkAtCursor( const QTextCursor& cur )
+{
+	QString line = cur.block().text();
+	int pos = cur.position() - cur.block().position() - 1;
+
+	if ( pos < 0 || pos >= line.length() )
+		return -1;
+
+	int left = line.lastIndexOf( '[', pos );
+	int right = line.indexOf( ']', pos );
+
+	if ( left == -1 || right == -1 || pos < left || pos > right )
+		return -1;
+
+	QString candidate = line.mid( left, right - left + 1 );
+	int tagLength = 0;
+
+	if ( !isTimingMark( candidate, &tagLength ) || tagLength != candidate.length() )
+		return -1;
+
+	return timeToMark( candidate.mid( 1, candidate.length() - 2 ) );
+}
+
 
 void Editor::insertTimeTag( qint64 timing )
 {
@@ -946,6 +969,28 @@ void Editor::insertTimeTag( qint64 timing )
 	cur.setPosition( curPos, QTextCursor::MoveAnchor );
 	setTextCursor( cur );
 	ensureCursorMiddle();
+}
+
+void Editor::mousePressEvent( QMouseEvent * event )
+{
+	if ( event->button() == Qt::LeftButton && (event->modifiers() & Qt::ControlModifier) )
+	{
+		QTextCursor cur = cursorAtPoint( event->pos() );
+
+		if ( !cur.isNull() )
+		{
+			qint64 mark = timingMarkAtCursor( cur );
+
+			if ( mark != -1 )
+			{
+				pMainWindow->playerSeekToTime( mark );
+				event->accept();
+				return;
+			}
+		}
+	}
+
+	QTextEdit::mousePressEvent( event );
 }
 
 void Editor::removeLastTimeTag()

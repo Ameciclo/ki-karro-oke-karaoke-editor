@@ -110,6 +110,7 @@ class Editor : public QTextEdit
 		bool canInsertFromMimeData ( const QMimeData * source ) const;
 		QMimeData * createMimeDataFromSelection () const;
 		void insertFromMimeData ( const QMimeData * source );
+		void mousePressEvent( QMouseEvent * event );
 		bool event ( QEvent * event );
 
 	private:
