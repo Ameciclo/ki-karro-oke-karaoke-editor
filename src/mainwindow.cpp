@@ -979,10 +979,12 @@ void MainWindow::playerSeekToTime(qint64 time)
 
 void MainWindow::playerWidget_updateUI()
 {
-    m_playerWidget->setCurrentPosition( m_mediaPlayer->position() );
+    qint64 currentPosition = m_mediaPlayer->position();
+    m_playerWidget->setCurrentPosition( currentPosition );
+    editor->followingTick( currentPosition );
 
     if ( m_testWindow )
-        m_testWindow->tick( m_mediaPlayer->position(), m_mediaPlayer->duration() );
+        m_testWindow->tick( currentPosition, m_mediaPlayer->duration() );
 }
 
 void MainWindow::mediaDurationChanged()

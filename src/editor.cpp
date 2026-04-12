@@ -46,6 +46,7 @@ Editor::Editor( QWidget * parent )
 {
 	m_project = 0;
 	m_timeId = 0;
+	m_lastPlaybackTagPosition = -1;
 
 	connect( this, SIGNAL( undoAvailable(bool)), pMainWindow, SLOT( editor_undoAvail(bool)));
 	connect( this, SIGNAL( redoAvailable(bool)), pMainWindow, SLOT( editor_redoAvail(bool)));
@@ -1039,31 +1040,53 @@ void Editor::followingTick(qint64 tick)
 
     QRegularExpression pattern( "\\[(\\d+:\\d+\\.\\d+)\\]");
     QRegularExpressionMatch match;
-    int pos = 0, lastpos = 0;
+    int pos = 0, lastpos = -1;
 
     while ( (match = pattern.match( text, pos )).hasMatch() )
     {
-        pos = pos + match.capturedLength();
+        pos = match.capturedEnd();
         qint64 timing = timeToMark( match.captured( 1 ) );
 
         if ( tick < timing )
-        {
-            // Move the cursor
-            QTextCursor cur = textCursor();
-            cur.movePosition( QTextCursor::Start );
-            cur.movePosition( QTextCursor::Right, QTextCursor::MoveAnchor, lastpos );
-            setTextCursor( cur );
-
-            // And show it in the editor
-            ensureCursorMiddle();
-            activateWindow();
-            setFocus();
             break;
-        }
 
-        lastpos = pos;
-        pos = pos + match.captured(1).length();
+        lastpos = match.capturedStart();
     }
+
+    if ( lastpos != m_lastPlaybackTagPosition )
+    {
+        m_lastPlaybackTagPosition = lastpos;
+        updatePlaybackTagHighlight( lastpos );
+    }
+}
+
+void Editor::updatePlaybackTagHighlight( int tagPosition )
+{
+	QList<QTextEdit::ExtraSelection> selections;
+
+	if ( tagPosition >= 0 )
+	{
+		QTextCursor tagCursor( document() );
+		tagCursor.setPosition( tagPosition );
+
+		QTextBlock block = tagCursor.block();
+		int blockOffset = tagPosition - block.position();
+		int tagEndOffset = block.text().indexOf( ']', blockOffset );
+
+		if ( tagEndOffset != -1 )
+		{
+			tagCursor.setPosition( tagPosition );
+			tagCursor.setPosition( block.position() + tagEndOffset + 1, QTextCursor::KeepAnchor );
+
+			QTextEdit::ExtraSelection tagSelection;
+			tagSelection.cursor = tagCursor;
+			tagSelection.format.setForeground( QColor( 0, 110, 0 ) );
+			tagSelection.format.setBackground( QColor( 120, 255, 120, 140 ) );
+			selections.push_back( tagSelection );
+		}
+	}
+
+	setExtraSelections( selections );
 }
 
 bool Editor::event ( QEvent * event )

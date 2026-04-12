@@ -118,6 +118,7 @@ class Editor : public QTextEdit
 		qint64		timeForPosition( QTextCursor cur );
 		bool        promptAndSplitLongBlocks();
 		bool        splitLongBlocks(int maxLinesPerBlock);
+		void        updatePlaybackTagHighlight( int tagPosition );
 
 		// Ensure the cursor is in the middle of the screen if possible
 		void		ensureCursorMiddle();
@@ -126,6 +127,7 @@ class Editor : public QTextEdit
 
 		Project		 *	m_project;
 		unsigned int	m_timeId; // for remove tag
+		int             m_lastPlaybackTagPosition;
 };
 
 #endif // EDITOR_H
