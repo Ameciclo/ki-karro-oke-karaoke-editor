@@ -576,7 +576,7 @@ p, li { white-space: pre-wrap; }
         </widget>
        </item>
        <item>
-        <widget class="QGroupBox" name="groupBox_6">
+       <widget class="QGroupBox" name="groupBox_6">
          <property name="title">
           <string>Colors</string>
          </property>
@@ -642,6 +642,16 @@ p, li { white-space: pre-wrap; }
            </widget>
           </item>
          </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="cbPreviewSlidingLines">
+         <property name="whatsThis">
+          <string>If enabled, the preview/test window stops treating empty lines as rigid page separators and gradually replaces already sung lines with upcoming lines from the following paragraph.</string>
+         </property>
+         <property name="text">
+          <string>Use sliding lines mode in preview/test window</string>
+         </property>
         </widget>
        </item>
        <item>

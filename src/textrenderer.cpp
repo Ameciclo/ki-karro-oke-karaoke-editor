@@ -33,6 +33,7 @@ static const int PREAMBLE_MIN_PAUSE = 5000; // 5000ms minimum pause between vers
 
 // Font size difference
 static const int SMALL_FONT_DIFF = 4; // 4px less
+static const int SLIDING_WINDOW_LINES = 4;
 
 
 TextRenderer::TextRenderer( int width, int height )
@@ -40,6 +41,7 @@ TextRenderer::TextRenderer( int width, int height )
 {
 	m_currentAlignment = VerticalBottom;
 	m_cdgMode = false;
+    m_layoutMode = LayoutPaged;
 	m_image = QImage( width, height, QImage::Format_ARGB32 );
 	init();
 }
@@ -91,6 +93,11 @@ void TextRenderer::setLyrics( const Lyrics& lyrics )
 				endlinetime = qMin( calcenlinetime, endlinetime + 2000 );
 			}
 
+            LyricBlockInfo lineinfo;
+            lineinfo.timestart = line.first().timing;
+            lineinfo.timeend = endlinetime;
+            bool linehadtext = false;
+
 			// Last item must be empty, so it is ok
 			for ( int pos = 0; pos < line.size(); pos++ )
 			{
@@ -112,11 +119,25 @@ void TextRenderer::setLyrics( const Lyrics& lyrics )
 					binfo.timestart = starttime;
 				}
 
+                bool lineintitle = intitle;
 				compileLine( lentry.text, starttime, endtime, &binfo, &intitle );
+                compileLine( lentry.text, starttime, endtime, &lineinfo, &lineintitle );
+                linehadtext = true;
 			}
 
 			binfo.text += "\n";
 			binfo.offsets [ endlinetime ] = binfo.text.size() - 1;
+
+            if ( linehadtext )
+            {
+                lineinfo.text = lineinfo.text.trimmed();
+
+                if ( !lineinfo.text.isEmpty() )
+                {
+                    lineinfo.offsets[ endlinetime ] = lineinfo.text.size() - 1;
+                    m_lyricLines.push_back( lineinfo );
+                }
+            }
 		}
 
 		binfo.text = binfo.text.trimmed();
@@ -285,6 +306,15 @@ void TextRenderer::setDefaultVerticalAlign(TextRenderer::VerticalAlignment align
     m_currentAlignment = align;
 }
 
+void TextRenderer::setLayoutMode(TextRenderer::LayoutMode mode)
+{
+    if ( m_layoutMode != mode )
+    {
+        m_layoutMode = mode;
+        m_forceRedraw = true;
+    }
+}
+
 void TextRenderer::setTitlePageData( const QString& artist, const QString& title, const QString& userCreatedBy, unsigned int msec )
 {
 	// setLyrics should be called before setTitlePageData
@@ -345,6 +375,7 @@ void TextRenderer::init()
 	m_prefetchDuration = 0;
 
 	m_lyricBlocks.clear();
+    m_lyricLines.clear();
 }
 
 void TextRenderer::setPreambleData( unsigned int height, unsigned int timems, unsigned int count )
@@ -571,7 +602,12 @@ QRect TextRenderer::boundingRect( int blockid, const QFont& font )
 
 void TextRenderer::drawLyrics( int blockid, int pos, const QRect& boundingRect )
 {
-    QString block = m_lyricBlocks[blockid].text;
+    drawLyrics( m_lyricBlocks[blockid], pos, boundingRect, blockid == 0 );
+}
+
+void TextRenderer::drawLyrics( const LyricBlockInfo& blockInfo, int pos, const QRect& boundingRect, bool titleScreen )
+{
+    QString block = blockInfo.text;
 
     // Prepare the painter
     QPainter painter( &m_image );
@@ -592,10 +628,10 @@ void TextRenderer::drawLyrics( int blockid, int pos, const QRect& boundingRect )
 
     // Get the height offset from the rect.
     int start_y = 0;
-    int verticalAlignment = m_lyricBlocks[blockid].verticalAlignment;
+    int verticalAlignment = blockInfo.verticalAlignment;
 
     // Draw title in the center, the rest according to the current vertical alignment
-    if ( blockid == 0 || verticalAlignment == VerticalMiddle )
+    if ( titleScreen || verticalAlignment == VerticalMiddle )
         start_y = (m_image.height() - boundingRect.height()) / 2 + painter.fontMetrics().height();
     else if ( verticalAlignment == VerticalTop )
         start_y = painter.fontMetrics().height() + m_image.width() / 50;	// see drawPreamble() for the offset
@@ -619,17 +655,17 @@ void TextRenderer::drawLyrics( int blockid, int pos, const QRect& boundingRect )
             for ( int i = linestart; i < cur; i++ )
             {
                 // Handle the font change events
-                QMap< unsigned int, int >::const_iterator fontchange = m_lyricBlocks[blockid].fonts.find( i );
+                QMap< unsigned int, int >::const_iterator fontchange = blockInfo.fonts.find( i );
 
-                if ( fontchange != m_lyricBlocks[blockid].fonts.end() )
+                if ( fontchange != blockInfo.fonts.end() )
                 {
                     painter.setFont( QFont(painter.font().family(), painter.font().pointSize() + fontchange.value() ) );
                 }
 
                 // Handle the color change events if pos doesn't cover them
-                QMap< unsigned int, QString >::const_iterator colchange = m_lyricBlocks[blockid].colors.find( i );
+                QMap< unsigned int, QString >::const_iterator colchange = blockInfo.colors.find( i );
 
-                if ( colchange != m_lyricBlocks[blockid].colors.end() )
+                if ( colchange != blockInfo.colors.end() )
                 {
                     QColor newcolor( colchange.value() );
                     fallbackColor = newcolor;
@@ -669,9 +705,9 @@ void TextRenderer::drawLyrics( int blockid, int pos, const QRect& boundingRect )
         }
 
         // We're calculating line width here, so check for any font change events
-        QMap< unsigned int, int >::const_iterator fontchange = m_lyricBlocks[blockid].fonts.find( cur );
+        QMap< unsigned int, int >::const_iterator fontchange = blockInfo.fonts.find( cur );
 
-        if ( fontchange != m_lyricBlocks[blockid].fonts.end() )
+        if ( fontchange != blockInfo.fonts.end() )
         {
             curFont.setPointSize( curFont.pointSize() + fontchange.value() );
             metrics = QFontMetrics( curFont );
@@ -725,6 +761,85 @@ void TextRenderer::drawBackground( qint64 timing )
 		m_lyricEvents.draw( timing, m_image );
 }
 
+int TextRenderer::slidingAnchorForTime( qint64 tickmark, int * currentLine, int * sungpos )
+{
+    *currentLine = -1;
+    *sungpos = -1;
+
+    if ( m_lyricLines.isEmpty() )
+        return -1;
+
+    int nextLine = -1;
+
+    for ( int i = 0; i < m_lyricLines.size(); ++i )
+    {
+        if ( tickmark < m_lyricLines[i].timestart )
+        {
+            nextLine = i;
+            break;
+        }
+
+        if ( tickmark >= m_lyricLines[i].timestart && tickmark <= m_lyricLines[i].timeend )
+        {
+            *currentLine = i;
+
+            QMap< qint64, unsigned int >::const_iterator it = m_lyricLines[i].offsets.find( tickmark );
+
+            if ( it == m_lyricLines[i].offsets.end() )
+                it = m_lyricLines[i].offsets.lowerBound( tickmark );
+
+            if ( it != m_lyricLines[i].offsets.end() )
+                *sungpos = it.value();
+
+            return i;
+        }
+    }
+
+    if ( nextLine != -1 && m_lyricLines[nextLine].timestart - tickmark <= (qint64) m_beforeDuration )
+        return nextLine;
+
+    return -1;
+}
+
+TextRenderer::LyricBlockInfo TextRenderer::buildSlidingWindow( int anchorLine, int currentLine, int sungpos, int * windowPos ) const
+{
+    LyricBlockInfo windowInfo;
+    *windowPos = -1;
+
+    int linesAdded = 0;
+
+    for ( int i = anchorLine; i < m_lyricLines.size() && linesAdded < SLIDING_WINDOW_LINES; ++i, ++linesAdded )
+    {
+        const LyricBlockInfo& lineInfo = m_lyricLines[i];
+        int textOffset = windowInfo.text.size();
+
+        if ( linesAdded == 0 )
+            windowInfo.timestart = lineInfo.timestart;
+
+        windowInfo.timeend = lineInfo.timeend;
+        windowInfo.text += lineInfo.text;
+
+        for ( auto it = lineInfo.offsets.begin(); it != lineInfo.offsets.end(); ++it )
+            windowInfo.offsets[it.key()] = textOffset + it.value();
+
+        for ( auto it = lineInfo.colors.begin(); it != lineInfo.colors.end(); ++it )
+            windowInfo.colors[textOffset + it.key()] = it.value();
+
+        for ( auto it = lineInfo.fonts.begin(); it != lineInfo.fonts.end(); ++it )
+            windowInfo.fonts[textOffset + it.key()] = it.value();
+
+        if ( i == currentLine && sungpos >= 0 )
+            *windowPos = textOffset + sungpos;
+
+        if ( linesAdded < SLIDING_WINDOW_LINES - 1 && i + 1 < m_lyricLines.size() )
+            windowInfo.text += "\n";
+
+        windowInfo.verticalAlignment = lineInfo.verticalAlignment;
+    }
+
+    return windowInfo;
+}
+
 int TextRenderer::update( qint64 timing )
 {
 	int result = UPDATE_COLORCHANGE;
@@ -733,6 +848,11 @@ int TextRenderer::update( qint64 timing )
 
 	// Should we show the title?
 	int blockid = lyricForTime( timing, &sungpos );
+    int slidingCurrentLine = -1;
+    int slidingAnchor = -1;
+
+    if ( m_layoutMode == LayoutSlidingLines && blockid != 0 )
+        slidingAnchor = slidingAnchorForTime( timing, &slidingCurrentLine, &sungpos );
 /*
 	if ( blockid != -1 )
 	{
@@ -778,12 +898,12 @@ int TextRenderer::update( qint64 timing )
 	if ( !m_forceRedraw && !redrawPreamble && !background_updated )
 	{
 		// Did lyrics change at all?
-		if ( blockid == m_lastBlockPlayed && sungpos == m_lastPosition )
+		if ( ((slidingAnchor != -1) ? slidingAnchor : blockid) == m_lastBlockPlayed && sungpos == m_lastPosition )
 			return UPDATE_NOCHANGE;
 
 		// If the new lyrics is empty, but we just finished playing something, keep it for 5 more seconds
 		// (i.e. post-delay)
-		if ( blockid == -1 && timing - m_lastSungTime < 5000 )
+		if ( blockid == -1 && slidingAnchor == -1 && timing - m_lastSungTime < 5000 )
 			return UPDATE_NOCHANGE;
 	}
 
@@ -791,10 +911,23 @@ int TextRenderer::update( qint64 timing )
 	drawBackground( timing );
 
 	// Did we get lyrics?
-	if ( blockid != -1 )
+	if ( blockid != -1 || slidingAnchor != -1 )
 	{
-		// Do the new lyrics fit into the image without resizing?
-		QRect imgrect = boundingRect( blockid, m_renderFont );
+        QRect imgrect;
+        LyricBlockInfo slidingWindow;
+        int windowPos = sungpos;
+
+        if ( slidingAnchor != -1 )
+        {
+            slidingWindow = buildSlidingWindow( slidingAnchor, slidingCurrentLine, sungpos, &windowPos );
+            m_lyricBlocks.push_back( slidingWindow );
+            imgrect = boundingRect( m_lyricBlocks.size() - 1, m_renderFont );
+            m_lyricBlocks.pop_back();
+        }
+        else
+        {
+            imgrect = boundingRect( blockid, m_renderFont );
+        }
 
 		if ( imgrect.width() > m_image.width() || imgrect.height() > m_image.height() )
 		{
@@ -808,7 +941,10 @@ int TextRenderer::update( qint64 timing )
 		}
 
 		// Draw the lyrics
-		drawLyrics( blockid, sungpos, imgrect );
+        if ( slidingAnchor != -1 )
+            drawLyrics( slidingWindow, windowPos, imgrect );
+        else
+            drawLyrics( blockid, sungpos, imgrect );
 
 		// Draw the preamble if needed
 		if ( m_drawPreamble )
@@ -816,7 +952,7 @@ int TextRenderer::update( qint64 timing )
 	}
 
 	// Is the text change significant enough to warrant full screen redraw?
-	if ( blockid != m_lastBlockPlayed || m_forceRedraw )
+	if ( ((slidingAnchor != -1) ? slidingAnchor : blockid) != m_lastBlockPlayed || m_forceRedraw )
 	{
 		if ( result != UPDATE_RESIZED )
 			result = UPDATE_FULL;
@@ -824,7 +960,7 @@ int TextRenderer::update( qint64 timing )
 
 	//saveImage();
 
-	m_lastBlockPlayed = blockid;
+	m_lastBlockPlayed = (slidingAnchor != -1) ? slidingAnchor : blockid;
 	m_lastPosition = sungpos;
 
 	m_forceRedraw = false;

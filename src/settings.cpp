@@ -68,6 +68,7 @@ Settings::Settings()
 	m_previewBackground = QColor( settings.value( "preview/bgcolor", "black" ).toString() );
 	m_previewTextInactive = QColor( settings.value( "preview/inactivecolor", "white" ).toString() );
 	m_previewTextActive = QColor( settings.value( "preview/activecolor", "green" ).toString() );
+    m_previewSlidingLinesMode = settings.value( "preview/slidinglinesmode", false ).toBool();
 
     QString key = settings.value( "advanced/registrationkey", "").toString();
 
@@ -115,6 +116,7 @@ void Settings::edit()
 	ui.btnPreviewColorActive->setColor( m_previewTextActive );
 	ui.btnPreviewColorBg->setColor( m_previewBackground );
 	ui.btnPreviewColorInactive->setColor( m_previewTextInactive );
+    ui.cbPreviewSlidingLines->setChecked( m_previewSlidingLinesMode );
 
 	ui.cbCheckForUpdates->setChecked( m_checkForUpdates );
 
@@ -156,6 +158,7 @@ void Settings::edit()
 	m_previewTextActive = ui.btnPreviewColorActive->color();
 	m_previewBackground = ui.btnPreviewColorBg->color();
 	m_previewTextInactive = ui.btnPreviewColorInactive->color();
+    m_previewSlidingLinesMode = ui.cbPreviewSlidingLines->isChecked();
 
 	// And save them
 	settings.setValue( "advanced/phononsounddelay", m_phononSoundDelay );
@@ -186,7 +189,8 @@ void Settings::edit()
 	settings.setValue( "preview/fontsize", m_previewFontSize );
 	settings.setValue( "preview/bgcolor", m_previewBackground.name() );
 	settings.setValue( "preview/inactivecolor", m_previewTextInactive.name() );
-    settings.setValue( "preview/activecolor", m_previewTextActive.name() );
+	settings.setValue( "preview/activecolor", m_previewTextActive.name() );
+    settings.setValue( "preview/slidinglinesmode", m_previewSlidingLinesMode );
 }
 
 void Settings::updateLastUsedDirectory(const QString &lastdir)

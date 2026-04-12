@@ -32,12 +32,31 @@ class Project;
 class TextRenderer : public LyricsRenderer
 {
 	public:
+        typedef struct
+        {
+            qint64	timestart;
+            qint64	timeend;
+
+            QString	text;
+            QMap< qint64, unsigned int > offsets;
+            QMap< unsigned int, QString > colors;
+            QMap< unsigned int, int > fonts;
+            int	verticalAlignment;
+
+        } LyricBlockInfo;
+
         enum VerticalAlignment
         {
             // default = 0
             VerticalBottom = 0,
             VerticalMiddle = 1,
             VerticalTop = 2
+        };
+
+        enum LayoutMode
+        {
+            LayoutPaged = 0,
+            LayoutSlidingLines = 1
         };
 
 		TextRenderer( int width, int height );
@@ -55,6 +74,7 @@ class TextRenderer : public LyricsRenderer
 		void	setTitlePageData( const QString& artist, const QString& title, const QString& userCreatedBy, unsigned int msec ); // duration = 0 - no title, default
 		void	setColorAlpha( int alpha ); // 0 - 255
         void    setDefaultVerticalAlign( VerticalAlignment align );
+        void    setLayoutMode( LayoutMode mode );
 
 		// Force CD+G rendering mode (no anti-aliasing)
 		void	forceCDGmode();
@@ -82,7 +102,7 @@ class TextRenderer : public LyricsRenderer
 		// Verifies that all lyrics could be rendered into a specific image size using the provided font
 		bool	verifyFontSize( const QSize& imagesize, const QFont& font );
 
-    private:
+	private:
 		// Returns the lyrics bounding box for a line or for paragraph using the font specified,
 		// or the default font if not specified
 		QRect	boundingRect( int blockid, const QFont& font );
@@ -90,38 +110,18 @@ class TextRenderer : public LyricsRenderer
 		void	init();
 		void	prepareEvents();
 		int		lyricForTime( qint64 tickmark, int * sungpos );
+        int     slidingAnchorForTime( qint64 tickmark, int * currentLine, int * sungpos );
+        LyricBlockInfo buildSlidingWindow( int anchorLine, int currentLine, int sungpos, int * windowPos ) const;
 		QString	titleScreen() const;
 		void	fixActionSequences( QString& block );
 		void	drawLyrics( int blockid, int pos, const QRect& boundingRect );
+        void    drawLyrics( const LyricBlockInfo& blockInfo, int pos, const QRect& boundingRect, bool titleScreen = false );
 		void	drawPreamble();
 		void	drawBackground( qint64 timing );
 
 	private:
-		// Lyrics to render
-		typedef struct
-		{
-			qint64	timestart;
-			qint64	timeend;
-
-			// Text is for the whole block, with all special characters stripped down
-			QString	text;
-
-			// Text offsets in block per specific time
-			QMap< qint64, unsigned int > offsets;
-
-			// Per-character color changes for following (non-sung) characters in the block.
-			// if none, the default color is used
-			QMap< unsigned int, QString > colors;
-
-			// Per-character font size changes for following (non-sung) characters in the block.
-			// if none, the default color is used
-			QMap< unsigned int, int > fonts;
-
-			int	verticalAlignment;
-
-		} LyricBlockInfo;
-
 		QVector< LyricBlockInfo >	m_lyricBlocks;
+        QVector< LyricBlockInfo >    m_lyricLines;
 
 		// Compile a single line
 		void	compileLine( const QString& line, qint64 starttime, qint64 endtime, LyricBlockInfo * binfo, bool *intitle );
@@ -159,6 +159,7 @@ class TextRenderer : public LyricsRenderer
 
 		// Vertical alignment
 		int						m_currentAlignment;
+        LayoutMode              m_layoutMode;
 };
 
 #endif // TEXTRENDERER_H
