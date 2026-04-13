@@ -275,7 +275,6 @@ void MainWindow::connectActions()
 	connect( actionExport_lyric_file, SIGNAL( triggered()), this, SLOT(act_projectExportLyricFile()) );
 	connect( actionExport_video_file, SIGNAL( triggered()), this, SLOT(act_projectExportVideoFile()) );
 	connect( actionExport_CD_G_file, SIGNAL( triggered()), this, SLOT(act_projectExportCDGFile()) );
-	connect( actionEdit_header_data, SIGNAL( triggered()), this, SLOT( act_projectEditHeader()) );
 	connect( actionValidate_lyrics, SIGNAL( triggered()), this, SLOT( act_projectValidateLyrics()) );
 	connect( actionView_lyric_file, SIGNAL( triggered()), this, SLOT( act_projectViewLyricFile()) );
 	connect( actionTest_lyric_file, SIGNAL( triggered()), this, SLOT( act_projectTest()) );
@@ -725,13 +724,6 @@ void MainWindow::act_projectOpenLyricFile()
 	m_project->importLyrics( fileName );
 }
 
-void MainWindow::act_projectEditHeader()
-{
-	ProjectSettings ps( m_project, false, this );
-	ps.setWindowTitle( tr("Edit lyric header data" ) );
-	ps.exec();
-}
-
 void MainWindow::act_projectExportLyricFile()
 {
 	if ( !editor->validate() )
@@ -873,7 +865,6 @@ void MainWindow::updateState()
 	actionRedo->setEnabled( project_available );
 	actionInsert_tag->setEnabled( project_ready );
 	actionRemove_tag->setEnabled( project_ready );
-	actionEdit_header_data->setEnabled( project_available );
 	actionValidate_lyrics->setEnabled( project_available );
 	actionTest_lyric_file->setEnabled( project_ready );
 	actionTest_CDG_lyrics->setEnabled( project_ready );
@@ -886,7 +877,6 @@ void MainWindow::updateState()
 	actionExport_lyric_file->setEnabled( project_available );
 	actionExport_video_file->setEnabled( project_available );
 	actionExport_CD_G_file->setEnabled( project_available );
-	actionEdit_header_data->setEnabled( project_available );
 	actionProject_settings->setEnabled( project_available );
 	actionView_lyric_file->setEnabled( project_ready );
 	actionAdd_eol_timing_marks->setEnabled( project_ready );

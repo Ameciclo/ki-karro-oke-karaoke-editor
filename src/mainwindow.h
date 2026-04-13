@@ -79,7 +79,6 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void	act_adjustTiming();
 
 		void	act_projectOpenLyricFile();
-		void	act_projectEditHeader();
 		void	act_projectValidateLyrics();
 		void	act_projectViewLyricFile();
 		void	act_projectTest();
