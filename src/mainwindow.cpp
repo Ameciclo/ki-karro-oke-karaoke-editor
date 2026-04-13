@@ -92,7 +92,49 @@ MainWindow::MainWindow()
     m_previewModeGroup->addAction( m_actionPreviewModeSliding );
     m_previewModeGroup->addAction( m_actionPreviewModeSubstitute );
 
+    m_actionRealtimeTestUpdate = new QAction( tr("Realtime Test Update"), this );
+    m_actionRealtimeTestUpdate->setCheckable( true );
+
+    m_menuRealtimeSeekBack = new QMenu( tr("Seek Back On Update"), this );
+    m_realtimeSeekBackGroup = new QActionGroup( this );
+    m_realtimeSeekBackGroup->setExclusive( true );
+
+    const int realtimeSeekBackOptions[] = { 0, 1, 2, 3, 5 };
+
+    for ( unsigned int i = 0; i < sizeof( realtimeSeekBackOptions ) / sizeof( int ); ++i )
+    {
+        int seconds = realtimeSeekBackOptions[i];
+        QAction * action = m_menuRealtimeSeekBack->addAction( tr("%1 s").arg( seconds ) );
+        action->setCheckable( true );
+        action->setData( seconds );
+        m_realtimeSeekBackGroup->addAction( action );
+    }
+
+    m_actionSupportBlocks = new QAction( tr("Support Blocks"), this );
+    m_actionSupportBlocks->setCheckable( true );
+
+    m_menuBlockLines = new QMenu( tr("Max Lines Per Block"), this );
+    m_blockLinesGroup = new QActionGroup( this );
+    m_blockLinesGroup->setExclusive( true );
+
+    const int blockLineOptions[] = { 4, 6, 8 };
+
+    for ( unsigned int i = 0; i < sizeof( blockLineOptions ) / sizeof( int ); ++i )
+    {
+        int lines = blockLineOptions[i];
+        QAction * action = m_menuBlockLines->addAction( tr("%1 lines").arg( lines ) );
+        action->setCheckable( true );
+        action->setData( lines );
+        m_blockLinesGroup->addAction( action );
+    }
+
     menuSettings->addMenu( m_menuModes );
+    menuSettings->addSeparator();
+    menuSettings->addAction( m_actionRealtimeTestUpdate );
+    menuSettings->addMenu( m_menuRealtimeSeekBack );
+    menuSettings->addSeparator();
+    menuSettings->addAction( m_actionSupportBlocks );
+    menuSettings->addMenu( m_menuBlockLines );
 
 	// Initialize stuff
 	m_project = 0;
@@ -153,6 +195,7 @@ MainWindow::MainWindow()
 
 	// Update window state
     syncPreviewLayoutModeActions();
+    syncQuickSettingsActions();
 	updateState();
 
 	checkNewVersionAvailable();
@@ -224,6 +267,8 @@ void MainWindow::connectActions()
 	connect( m_actionPreviewModeStandard, SIGNAL( triggered()), this, SLOT(act_settingsPreviewModeStandard()) );
 	connect( m_actionPreviewModeSliding, SIGNAL( triggered()), this, SLOT(act_settingsPreviewModeSliding()) );
 	connect( m_actionPreviewModeSubstitute, SIGNAL( triggered()), this, SLOT(act_settingsPreviewModeSubstitute()) );
+    connect( m_actionRealtimeTestUpdate, SIGNAL( triggered()), this, SLOT(act_settingsRealtimeTestUpdate()) );
+    connect( m_actionSupportBlocks, SIGNAL( triggered()), this, SLOT(act_settingsSupportBlocks()) );
 	connect( actionSplit_current_line, SIGNAL( triggered()), this, SLOT(act_editSplitLine()) );
 	connect( actionAbout, SIGNAL( triggered()), this, SLOT(act_helpAbout()) );
 	connect( actionProject_settings, SIGNAL( triggered()), this, SLOT(act_projectSettings()) );
@@ -261,6 +306,14 @@ void MainWindow::connectActions()
 	// Registration
 	connect( actionRegistration, SIGNAL( triggered()), this, SLOT( act_helpRegistration()) );
     actionRegistration->setVisible( true );
+
+    connect( m_realtimeSeekBackGroup, &QActionGroup::triggered, this, [this]( QAction * action ) {
+        setRealtimeSeekBack( action->data().toInt() );
+    });
+
+    connect( m_blockLinesGroup, &QActionGroup::triggered, this, [this]( QAction * action ) {
+        setMaxBlockLines( action->data().toInt() );
+    });
 }
 
 void MainWindow::createToolbars()
@@ -764,6 +817,7 @@ void MainWindow::act_settingsGeneral()
 {
 	pSettings->edit();
     syncPreviewLayoutModeActions();
+    syncQuickSettingsActions();
 }
 
 void MainWindow::act_settingsPreviewModeStandard()
@@ -779,6 +833,16 @@ void MainWindow::act_settingsPreviewModeSliding()
 void MainWindow::act_settingsPreviewModeSubstitute()
 {
     setPreviewLayoutMode( 2 );
+}
+
+void MainWindow::act_settingsRealtimeTestUpdate()
+{
+    setRealtimeTestUpdateEnabled( m_actionRealtimeTestUpdate->isChecked() );
+}
+
+void MainWindow::act_settingsSupportBlocks()
+{
+    setSupportBlocksEnabled( m_actionSupportBlocks->isChecked() );
 }
 
 
@@ -884,11 +948,52 @@ void MainWindow::setPreviewLayoutMode( int mode )
     syncPreviewLayoutModeActions();
 }
 
+void MainWindow::setRealtimeTestUpdateEnabled( bool enabled )
+{
+    pSettings->m_editorAutoUpdateTestWindows = enabled;
+    QSettings().setValue( "editor/autoupdatetestwindow", enabled );
+    syncQuickSettingsActions();
+}
+
+void MainWindow::setRealtimeSeekBack( int seconds )
+{
+    pSettings->m_editorAutoUpdatePlayerBackseek = seconds;
+    QSettings().setValue( "editor/autoupdateplayerbackseek", seconds );
+    syncQuickSettingsActions();
+}
+
+void MainWindow::setSupportBlocksEnabled( bool enabled )
+{
+    pSettings->m_editorSupportBlocks = enabled;
+    QSettings().setValue( "editor/supportblocks", enabled );
+    syncQuickSettingsActions();
+}
+
+void MainWindow::setMaxBlockLines( int lines )
+{
+    pSettings->m_editorMaxBlock = lines;
+    QSettings().setValue( "editor/maxlinesinblock", lines );
+    syncQuickSettingsActions();
+}
+
 void MainWindow::syncPreviewLayoutModeActions()
 {
     m_actionPreviewModeStandard->setChecked( pSettings->m_previewLayoutMode == 0 );
     m_actionPreviewModeSliding->setChecked( pSettings->m_previewLayoutMode == 1 );
     m_actionPreviewModeSubstitute->setChecked( pSettings->m_previewLayoutMode == 2 );
+}
+
+void MainWindow::syncQuickSettingsActions()
+{
+    m_actionRealtimeTestUpdate->setChecked( pSettings->m_editorAutoUpdateTestWindows );
+    m_actionSupportBlocks->setChecked( pSettings->m_editorSupportBlocks );
+    m_menuBlockLines->setEnabled( pSettings->m_editorSupportBlocks );
+
+    for ( QAction * action : m_realtimeSeekBackGroup->actions() )
+        action->setChecked( action->data().toInt() == pSettings->m_editorAutoUpdatePlayerBackseek );
+
+    for ( QAction * action : m_blockLinesGroup->actions() )
+        action->setChecked( action->data().toInt() == pSettings->m_editorMaxBlock );
 }
 
 void MainWindow::visibilityPlayer( bool visible )

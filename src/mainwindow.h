@@ -94,6 +94,8 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
         void    act_settingsPreviewModeStandard();
         void    act_settingsPreviewModeSliding();
         void    act_settingsPreviewModeSubstitute();
+        void    act_settingsRealtimeTestUpdate();
+        void    act_settingsSupportBlocks();
 
 		void	act_helpAbout();
 		void	act_helpRegistration();
@@ -129,8 +131,13 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void	connectActions();
 		void	createToolbars();
         void    refreshPreviewDockLyrics();
+        void    setRealtimeTestUpdateEnabled( bool enabled );
+        void    setRealtimeSeekBack( int seconds );
+        void    setSupportBlocksEnabled( bool enabled );
+        void    setMaxBlockLines( int lines );
         void    setPreviewLayoutMode( int mode );
         void    syncPreviewLayoutModeActions();
+        void    syncQuickSettingsActions();
 		void	setCurrentProject( Project * proj );
 		bool	saveProject( const QString& filename );
 		bool	loadProject( const QString& file );
@@ -153,10 +160,16 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		QAction             *   m_actionPrevTimingTag;
 		QAction             *   m_actionNextTimingTag;
         QMenu               *   m_menuModes;
+        QMenu               *   m_menuRealtimeSeekBack;
+        QMenu               *   m_menuBlockLines;
         QActionGroup        *   m_previewModeGroup;
+        QActionGroup        *   m_realtimeSeekBackGroup;
+        QActionGroup        *   m_blockLinesGroup;
         QAction             *   m_actionPreviewModeStandard;
         QAction             *   m_actionPreviewModeSliding;
         QAction             *   m_actionPreviewModeSubstitute;
+        QAction             *   m_actionRealtimeTestUpdate;
+        QAction             *   m_actionSupportBlocks;
         QToolBar            *   m_projectToolBar;
         QToolBar            *   m_timingToolBar;
         QToolBar            *   m_lyricsToolBar;
