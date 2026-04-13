@@ -19,16 +19,30 @@
 
 #include "mainwindow.h"
 #include <QApplication>
+#include <QDir>
+#include <QLocale>
+#include <QTranslator>
 
 int main(int argc, char *argv[])
 {
 	Q_INIT_RESOURCE(resources);
 	
 	QApplication app(argc, argv);
+    QTranslator appTranslator;
 
 	QCoreApplication::setOrganizationName("karlyriceditor.com");
 	QCoreApplication::setOrganizationDomain("karlyriceditor.com");
 	QCoreApplication::setApplicationName("karlyriceditor");
+
+    QString translationsDir = QDir( QCoreApplication::applicationDirPath() ).absoluteFilePath( "../ts" );
+    QString locale = QLocale::system().name().toLower();
+    QString language = QLocale::system().name().section( '_', 0, 0 ).toLower();
+
+    if ( appTranslator.load( QString("karlyriceditor_%1.qm").arg( locale ), translationsDir )
+         || appTranslator.load( QString("karlyriceditor_%1.qm").arg( language ), translationsDir ) )
+    {
+        app.installTranslator( &appTranslator );
+    }
 
 	MainWindow wnd;
 	wnd.show();

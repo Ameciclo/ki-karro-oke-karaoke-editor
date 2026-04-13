@@ -88,6 +88,8 @@ FORMS += mainwindow.ui \
     dialog_registration.ui \
     dialog_timeadjustment.ui \
     video_profile_dialog.ui
+TRANSLATIONS += ../ts/karlyriceditor_cs.ts \
+    ../ts/karlyriceditor_pt_br.ts
 
 QT += core widgets network
 
