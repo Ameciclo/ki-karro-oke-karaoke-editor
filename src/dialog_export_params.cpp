@@ -187,14 +187,16 @@ int DialogExportOptions::calculateLargestFontSize( const QFont& font )
 {
 	// Ask the renderer
 	TextRenderer renderer( 100, 100 );
-    renderer.setLayoutMode( (TextRenderer::LayoutMode) pSettings->m_previewLayoutMode );
+    renderer.setLayoutMode( (TextRenderer::LayoutMode) m_project->tag( Project::Tag_Video_LayoutMode, QString::number( pSettings->m_previewLayoutMode ) ).toInt() );
+    renderer.setDefaultVerticalAlign( (TextRenderer::VerticalAlignment) m_project->tag( m_videomode ? Project::Tag_Video_TextAlignVertical : Project::Tag_CDG_TextAlignVertical,
+                                                                                         QString::number( TextRenderer::VerticalBottom ) ).toInt() );
 	renderer.setLyrics( m_lyrics );
     renderer.setRenderFont( font );
 
     renderer.setTitlePageData( leArtist->text(),
                                leTitle->text(),
                                leTitleCreatedBy->text(),
-                               m_project->tag( Project::Tag_CDG_titletime, "5" ).toInt() * 1000 );
+                               m_project->tag( m_videomode ? Project::Tag_Video_titletime : Project::Tag_CDG_titletime, "5" ).toInt() * 1000 );
 
     return renderer.autodetectFontSize( getVideoSize(), font );
 }
@@ -206,14 +208,15 @@ bool DialogExportOptions::testFontSize()
 
     // Ask the renderer
     TextRenderer renderer( 100, 100 );
-    renderer.setLayoutMode( (TextRenderer::LayoutMode) pSettings->m_previewLayoutMode );
+    renderer.setLayoutMode( (TextRenderer::LayoutMode) m_project->tag( Project::Tag_Video_LayoutMode, QString::number( pSettings->m_previewLayoutMode ) ).toInt() );
+    renderer.setDefaultVerticalAlign( (TextRenderer::VerticalAlignment) boxTextVerticalAlign->currentIndex() );
     renderer.setLyrics( m_lyrics );
     renderer.setRenderFont( font );
 
     renderer.setTitlePageData( leArtist->text(),
                                leTitle->text(),
                                leTitleCreatedBy->text(),
-                               m_project->tag( Project::Tag_CDG_titletime, "5" ).toInt() * 1000 );
+                               m_project->tag( m_videomode ? Project::Tag_Video_titletime : Project::Tag_CDG_titletime, "5" ).toInt() * 1000 );
 
 	if ( !renderer.verifyFontSize( getVideoSize(), font ) )
 	{
@@ -375,7 +378,7 @@ void DialogExportOptions::activateTab( int index )
 
     // The order here matters because setLyrics resets font and colors
     m_renderer.setDefaultVerticalAlign( (TextRenderer::VerticalAlignment) boxTextVerticalAlign->currentIndex() );
-    m_renderer.setLayoutMode( (TextRenderer::LayoutMode) pSettings->m_previewLayoutMode );
+    m_renderer.setLayoutMode( (TextRenderer::LayoutMode) m_project->tag( Project::Tag_Video_LayoutMode, QString::number( pSettings->m_previewLayoutMode ) ).toInt() );
     m_renderer.setLyrics( m_lyrics );
     m_renderer.setRenderFont( font );
     m_renderer.setColorBackground( btnVideoColorBg->color() );

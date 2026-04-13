@@ -71,12 +71,22 @@ void LyricsWidget::paintEvent( QPaintEvent * )
 void LyricsWidget::setLyrics( const Lyrics& lyrics, const QString& artist, const QString& title, const Project * project )
 {
 	TextRenderer * re = new TextRenderer( 720, 480 );
-	re->setLyrics( lyrics );
-	re->setPreambleData( 5, 5000, 10 );
 
     if ( project )
     {
         re->setLayoutMode( (TextRenderer::LayoutMode) project->tag( Project::Tag_Video_LayoutMode, QString::number( pSettings->m_previewLayoutMode ) ).toInt() );
+        re->setDefaultVerticalAlign( (TextRenderer::VerticalAlignment) project->tag( Project::Tag_Video_TextAlignVertical, QString::number( TextRenderer::VerticalBottom ) ).toInt() );
+    }
+    else
+    {
+        re->setLayoutMode( (TextRenderer::LayoutMode) pSettings->m_previewLayoutMode );
+        re->setDefaultVerticalAlign( TextRenderer::VerticalBottom );
+    }
+
+	re->setLyrics( lyrics );
+
+    if ( project )
+    {
         re->setRenderFont( QFont( project->tag( Project::Tag_Video_font, pSettings->m_previewFontFamily ),
                                   qMax( 1, project->tag( Project::Tag_Video_fontsize, QString::number( pSettings->m_previewFontSize ) ).toInt() ) ) );
         re->setColorBackground( QColor( project->tag( Project::Tag_Video_bgcolor, pSettings->m_previewBackground.name() ) ) );
@@ -84,10 +94,8 @@ void LyricsWidget::setLyrics( const Lyrics& lyrics, const QString& artist, const
         re->setColorSang( QColor( project->tag( Project::Tag_Video_inactivecolor, pSettings->m_previewTextInactive.name() ) ) );
         re->setColorToSing( QColor( project->tag( Project::Tag_Video_activecolor, pSettings->m_previewTextActive.name() ) ) );
     }
-    else
-    {
-        re->setLayoutMode( (TextRenderer::LayoutMode) pSettings->m_previewLayoutMode );
-    }
+
+	re->setPreambleData( 5, 5000, 10 );
 
 	if ( !artist.isEmpty() && !title.isEmpty() )
 		re->setTitlePageData( artist, title, "", 5000 );

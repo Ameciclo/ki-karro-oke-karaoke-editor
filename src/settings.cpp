@@ -114,13 +114,6 @@ void Settings::edit()
 	ui.btnTimingColorTiPitch->setColor( m_timeMarkPitchBackground );
 	ui.cbShowPitchTimingMark->setChecked( m_timeMarkShowPitch );
 
-	ui.fontPreview->setCurrentFont( QFont( m_previewFontFamily ) );
-	ui.fontPreviewSize->setValue( m_previewFontSize );
-	ui.btnPreviewColorActive->setColor( m_previewTextActive );
-	ui.btnPreviewColorBg->setColor( m_previewBackground );
-	ui.btnPreviewColorInactive->setColor( m_previewTextInactive );
-    ui.boxPreviewLayoutMode->setCurrentIndex( m_previewLayoutMode );
-
 	ui.cbCheckForUpdates->setChecked( m_checkForUpdates );
 
 	if ( settings.contains( "advanced/lastupdate" ) )
@@ -156,13 +149,6 @@ void Settings::edit()
 	m_timeMarkPitchBackground = ui.btnTimingColorTiPitch->color();
 	m_timeMarkShowPitch = ui.cbShowPitchTimingMark->isChecked();
 
-	m_previewFontFamily = ui.fontPreview->currentFont().family();
-	m_previewFontSize = ui.fontPreviewSize->value();
-	m_previewTextActive = ui.btnPreviewColorActive->color();
-	m_previewBackground = ui.btnPreviewColorBg->color();
-	m_previewTextInactive = ui.btnPreviewColorInactive->color();
-    m_previewLayoutMode = ui.boxPreviewLayoutMode->currentIndex();
-
 	// And save them
 	settings.setValue( "advanced/phononsounddelay", m_phononSoundDelay );
 	settings.setValue( "advanced/checkforupdates", m_checkForUpdates );
@@ -188,12 +174,6 @@ void Settings::edit()
 	settings.setValue( "timemark/pitchbgcolor", m_timeMarkPitchBackground.name() );
 	settings.setValue( "timemark/showpitch", m_timeMarkShowPitch );
 
-	settings.setValue( "preview/fontfamily", m_previewFontFamily );
-	settings.setValue( "preview/fontsize", m_previewFontSize );
-	settings.setValue( "preview/bgcolor", m_previewBackground.name() );
-	settings.setValue( "preview/inactivecolor", m_previewTextInactive.name() );
-	settings.setValue( "preview/activecolor", m_previewTextActive.name() );
-    settings.setValue( "preview/layoutmode", m_previewLayoutMode );
 }
 
 void Settings::updateLastUsedDirectory(const QString &lastdir)

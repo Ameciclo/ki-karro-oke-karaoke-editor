@@ -138,12 +138,12 @@
               </property>
               <item>
                <property name="text">
-                <string>Fixed</string>
+                <string>Manual</string>
                </property>
               </item>
               <item>
                <property name="text">
-                <string>Fit</string>
+                <string>Auto fit</string>
                </property>
               </item>
              </widget>

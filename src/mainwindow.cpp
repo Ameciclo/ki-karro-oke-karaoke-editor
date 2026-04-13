@@ -98,7 +98,6 @@ MainWindow::MainWindow()
 
     m_actionProjectAppearance = new QAction( tr("Appearance..."), this );
     m_actionProjectFont = new QAction( tr("Font..."), this );
-    m_actionProjectColors = new QAction( tr("Colors..."), this );
 
     m_menuRealtimeSeekBack = new QMenu( tr("Seek Back On Update"), this );
     m_realtimeSeekBackGroup = new QActionGroup( this );
@@ -125,6 +124,12 @@ MainWindow::MainWindow()
     m_menuProjectFontSize = new QMenu( tr("Font Size"), this );
     m_projectFontSizeGroup = new QActionGroup( this );
     m_projectFontSizeGroup->setExclusive( true );
+
+    m_menuProjectColors = new QMenu( tr("Colors"), this );
+    m_menuProjectColors->addAction( tr("Background..."), this, SLOT(act_projectColorBackground()) );
+    m_menuProjectColors->addAction( tr("Information..."), this, SLOT(act_projectColorInformation()) );
+    m_menuProjectColors->addAction( tr("Sung..."), this, SLOT(act_projectColorSung()) );
+    m_menuProjectColors->addAction( tr("Not Sung Yet..."), this, SLOT(act_projectColorToSing()) );
 
     const int fontSizeOptions[] = { 18, 20, 24, 28, 32, 36, 42, 48 };
 
@@ -178,7 +183,7 @@ MainWindow::MainWindow()
     menuProject->addMenu( m_menuModes );
     menuProject->addAction( m_actionProjectFont );
     menuProject->addMenu( m_menuProjectFontSize );
-    menuProject->addAction( m_actionProjectColors );
+    menuProject->addMenu( m_menuProjectColors );
     menuProject->addMenu( m_menuProjectVerticalAlign );
     menuProject->addSeparator();
     menuProject->addAction( actionOpen_lyric_file );
@@ -328,7 +333,6 @@ void MainWindow::connectActions()
 	connect( actionProject_settings, SIGNAL( triggered()), this, SLOT(act_projectSettings()) );
     connect( m_actionProjectAppearance, SIGNAL( triggered()), this, SLOT(act_projectAppearance()) );
     connect( m_actionProjectFont, SIGNAL( triggered()), this, SLOT(act_projectFont()) );
-    connect( m_actionProjectColors, SIGNAL( triggered()), this, SLOT(act_projectColors()) );
 	connect( actionExport_lyric_file, SIGNAL( triggered()), this, SLOT(act_projectExportLyricFile()) );
 	connect( actionExport_video_file, SIGNAL( triggered()), this, SLOT(act_projectExportVideoFile()) );
 	connect( actionExport_CD_G_file, SIGNAL( triggered()), this, SLOT(act_projectExportCDGFile()) );
@@ -897,21 +901,32 @@ void MainWindow::act_projectFont()
     refreshProjectLyricsWidgets();
 }
 
-void MainWindow::act_projectColors()
-{
-    ProjectSettings ps( m_project, true, this, ProjectSettings::TabAppearance );
-    ps.setWindowTitle( tr("Edit project colors" ) );
-
-    if ( ps.exec() == QDialog::Accepted )
-        refreshProjectLyricsWidgets();
-}
-
 void MainWindow::act_projectVerticalAlign()
 {
     QAction * action = m_projectVerticalAlignGroup->checkedAction();
 
     if ( action )
         setProjectVerticalAlign( action->data().toInt() );
+}
+
+void MainWindow::act_projectColorBackground()
+{
+    setProjectColor( Project::Tag_Video_bgcolor, tr("Select background color") );
+}
+
+void MainWindow::act_projectColorInformation()
+{
+    setProjectColor( Project::Tag_Video_infocolor, tr("Select information color") );
+}
+
+void MainWindow::act_projectColorSung()
+{
+    setProjectColor( Project::Tag_Video_inactivecolor, tr("Select sung color") );
+}
+
+void MainWindow::act_projectColorToSing()
+{
+    setProjectColor( Project::Tag_Video_activecolor, tr("Select not sung yet color") );
 }
 
 void MainWindow::act_settingsGeneral()
@@ -1073,6 +1088,21 @@ void MainWindow::setProjectVerticalAlign( int align )
     refreshProjectLyricsWidgets();
 }
 
+void MainWindow::setProjectColor( int tag, const QString& title )
+{
+    if ( !m_project )
+        return;
+
+    QColor current( m_project->tag( (Project::Tag) tag ) );
+    QColor selected = QColorDialog::getColor( current, this, title );
+
+    if ( !selected.isValid() )
+        return;
+
+    m_project->setTag( (Project::Tag) tag, selected.name() );
+    refreshProjectLyricsWidgets();
+}
+
 void MainWindow::setRealtimeTestUpdateEnabled( bool enabled )
 {
     pSettings->m_editorAutoUpdateTestWindows = enabled;
@@ -1121,9 +1151,9 @@ void MainWindow::syncProjectAppearanceActions()
 
     m_actionProjectAppearance->setEnabled( enabled );
     m_actionProjectFont->setEnabled( enabled );
-    m_actionProjectColors->setEnabled( enabled );
     m_menuModes->setEnabled( enabled );
     m_menuProjectFontSize->setEnabled( enabled );
+    m_menuProjectColors->setEnabled( enabled );
     m_menuProjectVerticalAlign->setEnabled( enabled );
 
     for ( QAction * action : m_projectFontSizeGroup->actions() )

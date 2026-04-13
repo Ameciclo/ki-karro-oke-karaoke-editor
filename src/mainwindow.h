@@ -89,8 +89,11 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void	act_projectSettings();
         void    act_projectAppearance();
         void    act_projectFont();
-        void    act_projectColors();
         void    act_projectVerticalAlign();
+        void    act_projectColorBackground();
+        void    act_projectColorInformation();
+        void    act_projectColorSung();
+        void    act_projectColorToSing();
 
 		void	act_settingsGeneral();
 		void	act_settingsShowPlayer( bool checked );
@@ -141,6 +144,7 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
         void    setProjectPreviewLayoutMode( int mode );
         void    setProjectFontSize( int points );
         void    setProjectVerticalAlign( int align );
+        void    setProjectColor( int tag, const QString& title );
         void    syncPreviewLayoutModeActions();
         void    syncProjectAppearanceActions();
         void    syncQuickSettingsActions();
@@ -170,6 +174,7 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
         QMenu               *   m_menuRealtimeSeekBack;
         QMenu               *   m_menuBlockLines;
         QMenu               *   m_menuProjectFontSize;
+        QMenu               *   m_menuProjectColors;
         QMenu               *   m_menuProjectVerticalAlign;
         QActionGroup        *   m_previewModeGroup;
         QActionGroup        *   m_realtimeSeekBackGroup;
@@ -183,7 +188,6 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
         QAction             *   m_actionSupportBlocks;
         QAction             *   m_actionProjectAppearance;
         QAction             *   m_actionProjectFont;
-        QAction             *   m_actionProjectColors;
         QToolBar            *   m_projectToolBar;
         QToolBar            *   m_timingToolBar;
         QToolBar            *   m_lyricsToolBar;

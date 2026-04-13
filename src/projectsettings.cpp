@@ -123,13 +123,28 @@ ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent
 
     if ( initialTab != TabDefault )
     {
-        int index = initialTab;
+        QWidget * targetTab = 0;
 
-        if ( !m_generalTabShown && index > TabGeneral )
-            index -= 1;
+        switch ( initialTab )
+        {
+            case TabGeneral:
+                targetTab = showtype ? tabGeneral : tabRequired;
+                break;
 
-        if ( index >= 0 && index < tabSettings->count() )
-            tabSettings->setCurrentIndex( index );
+            case TabHeader:
+                targetTab = tabRequired;
+                break;
+
+            case TabAppearance:
+                targetTab = tabAppearance;
+                break;
+
+            default:
+                break;
+        }
+
+        if ( targetTab )
+            tabSettings->setCurrentWidget( targetTab );
     }
 
 	// Scale down the dialog as part of it is hidden

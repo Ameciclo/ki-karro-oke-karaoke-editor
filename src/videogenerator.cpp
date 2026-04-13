@@ -58,16 +58,10 @@ void VideoGenerator::generate( PlayerWidget * widget )
 
     // Must be set before lyrics
     lyricrenderer->setDefaultVerticalAlign( (TextRenderer::VerticalAlignment) m_project->tag( Project::Tag_Video_TextAlignVertical, QString::number( TextRenderer::VerticalBottom ) ).toInt() );
-    lyricrenderer->setLayoutMode( (TextRenderer::LayoutMode) pSettings->m_previewLayoutMode );
+    lyricrenderer->setLayoutMode( (TextRenderer::LayoutMode) m_project->tag( Project::Tag_Video_LayoutMode, QString::number( pSettings->m_previewLayoutMode ) ).toInt() );
 
     // The order matters because setLyrics resets font and colors
     lyricrenderer->setLyrics( m_lyrics );
-
-    // Title
-    lyricrenderer->setTitlePageData( dlg.m_artist,
-                                    dlg.m_title,
-                                    dlg.m_createdBy,
-                                    m_project->tag( Project::Tag_Video_titletime, "5" ).toInt() * 1000 );
 
 
     // Rendering font
@@ -85,6 +79,12 @@ void VideoGenerator::generate( PlayerWidget * widget )
     lyricrenderer->setColorTitle( m_project->tag( Project::Tag_Video_infocolor, "white" ) );
     lyricrenderer->setColorSang( m_project->tag( Project::Tag_Video_inactivecolor, "blue" ) );
     lyricrenderer->setColorToSing( m_project->tag( Project::Tag_Video_activecolor, "green" ) );    
+
+    // Title
+    lyricrenderer->setTitlePageData( dlg.m_artist,
+                                     dlg.m_title,
+                                     dlg.m_createdBy,
+                                     m_project->tag( Project::Tag_Video_titletime, "5" ).toInt() * 1000 );
 
 	// Preamble
 	if ( m_project->tag( Project::Tag_Video_preamble).toInt() != 0 )
