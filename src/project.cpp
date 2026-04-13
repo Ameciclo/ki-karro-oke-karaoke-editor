@@ -121,6 +121,7 @@ enum
 
     PD_TAG_EXPORT_CDG_TEXT_ALIGN_VERTICAL,
     PD_TAG_EXPORT_VIDEO_TEXT_ALIGN_VERTICAL,
+    PD_TAG_EXPORT_VIDEO_LAYOUT_MODE,
 };
 
 
@@ -161,6 +162,7 @@ void Project::clear()
 
     m_projectData[ PD_TAG_EXPORT_CDG_TEXT_ALIGN_VERTICAL ] = QString::number( TextRenderer::VerticalBottom );
     m_projectData[ PD_TAG_EXPORT_VIDEO_TEXT_ALIGN_VERTICAL ] = QString::number( TextRenderer::VerticalBottom );
+    m_projectData[ PD_TAG_EXPORT_VIDEO_LAYOUT_MODE ] = QString::number( pSettings->m_previewLayoutMode );
 
 	m_totalSongLength = 0;
 }
@@ -397,6 +399,10 @@ int	Project::tagToId( Tag tag  ) const
 
         case Tag_Video_TextAlignVertical:
             tagid = PD_TAG_EXPORT_VIDEO_TEXT_ALIGN_VERTICAL;
+            break;
+
+        case Tag_Video_LayoutMode:
+            tagid = PD_TAG_EXPORT_VIDEO_LAYOUT_MODE;
             break;
     }
 

@@ -87,12 +87,16 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void	act_projectExportVideoFile();
 		void	act_projectExportCDGFile();
 		void	act_projectSettings();
+        void    act_projectAppearance();
+        void    act_projectFont();
+        void    act_projectColors();
+        void    act_projectVerticalAlign();
 
 		void	act_settingsGeneral();
 		void	act_settingsShowPlayer( bool checked );
-        void    act_settingsPreviewModeStandard();
-        void    act_settingsPreviewModeSliding();
-        void    act_settingsPreviewModeSubstitute();
+        void    act_projectModeStandard();
+        void    act_projectModeSliding();
+        void    act_projectModeSubstitute();
         void    act_settingsRealtimeTestUpdate();
         void    act_settingsSupportBlocks();
 
@@ -134,9 +138,13 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
         void    setRealtimeSeekBack( int seconds );
         void    setSupportBlocksEnabled( bool enabled );
         void    setMaxBlockLines( int lines );
-        void    setPreviewLayoutMode( int mode );
+        void    setProjectPreviewLayoutMode( int mode );
+        void    setProjectFontSize( int points );
+        void    setProjectVerticalAlign( int align );
         void    syncPreviewLayoutModeActions();
+        void    syncProjectAppearanceActions();
         void    syncQuickSettingsActions();
+        void    refreshProjectLyricsWidgets();
 		void	setCurrentProject( Project * proj );
 		bool	saveProject( const QString& filename );
 		bool	loadProject( const QString& file );
@@ -161,14 +169,21 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
         QMenu               *   m_menuModes;
         QMenu               *   m_menuRealtimeSeekBack;
         QMenu               *   m_menuBlockLines;
+        QMenu               *   m_menuProjectFontSize;
+        QMenu               *   m_menuProjectVerticalAlign;
         QActionGroup        *   m_previewModeGroup;
         QActionGroup        *   m_realtimeSeekBackGroup;
         QActionGroup        *   m_blockLinesGroup;
+        QActionGroup        *   m_projectFontSizeGroup;
+        QActionGroup        *   m_projectVerticalAlignGroup;
         QAction             *   m_actionPreviewModeStandard;
         QAction             *   m_actionPreviewModeSliding;
         QAction             *   m_actionPreviewModeSubstitute;
         QAction             *   m_actionRealtimeTestUpdate;
         QAction             *   m_actionSupportBlocks;
+        QAction             *   m_actionProjectAppearance;
+        QAction             *   m_actionProjectFont;
+        QAction             *   m_actionProjectColors;
         QToolBar            *   m_projectToolBar;
         QToolBar            *   m_timingToolBar;
         QToolBar            *   m_lyricsToolBar;

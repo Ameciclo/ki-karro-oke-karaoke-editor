@@ -72,10 +72,11 @@ class Project
 			Tag_Video_titletime,
             Tag_Video_preamble,
 
-            Tag_ExportFilenameCDG,
+			Tag_ExportFilenameCDG,
             Tag_ExportFilenameVideo,
             Tag_CDG_TextAlignVertical,
             Tag_Video_TextAlignVertical,
+            Tag_Video_LayoutMode,
 		};
 
 		Project( Editor * editor );

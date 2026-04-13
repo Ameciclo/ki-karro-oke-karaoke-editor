@@ -28,6 +28,7 @@
 #include <QColorDialog>
 #include <QDockWidget>
 #include <QDesktopServices>
+#include <QFontDialog>
 #include <QUrl>
 
 #include "mediaplayer.h"
@@ -95,6 +96,10 @@ MainWindow::MainWindow()
     m_actionRealtimeTestUpdate = new QAction( tr("Realtime Test Update"), this );
     m_actionRealtimeTestUpdate->setCheckable( true );
 
+    m_actionProjectAppearance = new QAction( tr("Appearance..."), this );
+    m_actionProjectFont = new QAction( tr("Font..."), this );
+    m_actionProjectColors = new QAction( tr("Colors..."), this );
+
     m_menuRealtimeSeekBack = new QMenu( tr("Seek Back On Update"), this );
     m_realtimeSeekBackGroup = new QActionGroup( this );
     m_realtimeSeekBackGroup->setExclusive( true );
@@ -117,6 +122,39 @@ MainWindow::MainWindow()
     m_blockLinesGroup = new QActionGroup( this );
     m_blockLinesGroup->setExclusive( true );
 
+    m_menuProjectFontSize = new QMenu( tr("Font Size"), this );
+    m_projectFontSizeGroup = new QActionGroup( this );
+    m_projectFontSizeGroup->setExclusive( true );
+
+    const int fontSizeOptions[] = { 18, 20, 24, 28, 32, 36, 42, 48 };
+
+    for ( unsigned int i = 0; i < sizeof( fontSizeOptions ) / sizeof( int ); ++i )
+    {
+        int points = fontSizeOptions[i];
+        QAction * action = m_menuProjectFontSize->addAction( tr("%1 pt").arg( points ) );
+        action->setCheckable( true );
+        action->setData( points );
+        m_projectFontSizeGroup->addAction( action );
+    }
+
+    m_menuProjectVerticalAlign = new QMenu( tr("Vertical Align"), this );
+    m_projectVerticalAlignGroup = new QActionGroup( this );
+    m_projectVerticalAlignGroup->setExclusive( true );
+
+    QAction * actionBottom = m_menuProjectVerticalAlign->addAction( tr("Bottom") );
+    QAction * actionCenter = m_menuProjectVerticalAlign->addAction( tr("Center") );
+    QAction * actionTop = m_menuProjectVerticalAlign->addAction( tr("Top") );
+
+    actionBottom->setCheckable( true );
+    actionCenter->setCheckable( true );
+    actionTop->setCheckable( true );
+    actionBottom->setData( 0 );
+    actionCenter->setData( 1 );
+    actionTop->setData( 2 );
+    m_projectVerticalAlignGroup->addAction( actionBottom );
+    m_projectVerticalAlignGroup->addAction( actionCenter );
+    m_projectVerticalAlignGroup->addAction( actionTop );
+
     const int blockLineOptions[] = { 4, 6, 8 };
 
     for ( unsigned int i = 0; i < sizeof( blockLineOptions ) / sizeof( int ); ++i )
@@ -128,13 +166,29 @@ MainWindow::MainWindow()
         m_blockLinesGroup->addAction( action );
     }
 
-    menuSettings->addMenu( m_menuModes );
-    menuSettings->addSeparator();
     menuSettings->addAction( m_actionRealtimeTestUpdate );
     menuSettings->addMenu( m_menuRealtimeSeekBack );
     menuSettings->addSeparator();
     menuSettings->addAction( m_actionSupportBlocks );
     menuSettings->addMenu( m_menuBlockLines );
+
+    menuProject->clear();
+    menuProject->addAction( actionProject_settings );
+    menuProject->addAction( m_actionProjectAppearance );
+    menuProject->addMenu( m_menuModes );
+    menuProject->addAction( m_actionProjectFont );
+    menuProject->addMenu( m_menuProjectFontSize );
+    menuProject->addAction( m_actionProjectColors );
+    menuProject->addMenu( m_menuProjectVerticalAlign );
+    menuProject->addSeparator();
+    menuProject->addAction( actionOpen_lyric_file );
+    menuProject->addSeparator();
+    menuProject->addAction( actionValidate_lyrics );
+    menuProject->addAction( actionView_lyric_file );
+    menuProject->addAction( actionTest_lyric_file );
+    menuProject->addSeparator();
+    menuProject->addAction( actionExport_lyric_file );
+    menuProject->addAction( actionExport_video_file );
 
 	// Initialize stuff
 	m_project = 0;
@@ -264,14 +318,17 @@ void MainWindow::connectActions()
 	connect( actionClear_text, SIGNAL( triggered()), this, SLOT( act_editClearText()) );
 	connect( actionTrimspaces, SIGNAL( triggered()), this, SLOT( act_editTrimspaces()) );
 	connect( actionGeneral, SIGNAL( triggered()), this, SLOT(act_settingsGeneral()) );
-	connect( m_actionPreviewModeStandard, SIGNAL( triggered()), this, SLOT(act_settingsPreviewModeStandard()) );
-	connect( m_actionPreviewModeSliding, SIGNAL( triggered()), this, SLOT(act_settingsPreviewModeSliding()) );
-	connect( m_actionPreviewModeSubstitute, SIGNAL( triggered()), this, SLOT(act_settingsPreviewModeSubstitute()) );
+	connect( m_actionPreviewModeStandard, SIGNAL( triggered()), this, SLOT(act_projectModeStandard()) );
+	connect( m_actionPreviewModeSliding, SIGNAL( triggered()), this, SLOT(act_projectModeSliding()) );
+	connect( m_actionPreviewModeSubstitute, SIGNAL( triggered()), this, SLOT(act_projectModeSubstitute()) );
     connect( m_actionRealtimeTestUpdate, SIGNAL( triggered()), this, SLOT(act_settingsRealtimeTestUpdate()) );
     connect( m_actionSupportBlocks, SIGNAL( triggered()), this, SLOT(act_settingsSupportBlocks()) );
 	connect( actionSplit_current_line, SIGNAL( triggered()), this, SLOT(act_editSplitLine()) );
 	connect( actionAbout, SIGNAL( triggered()), this, SLOT(act_helpAbout()) );
 	connect( actionProject_settings, SIGNAL( triggered()), this, SLOT(act_projectSettings()) );
+    connect( m_actionProjectAppearance, SIGNAL( triggered()), this, SLOT(act_projectAppearance()) );
+    connect( m_actionProjectFont, SIGNAL( triggered()), this, SLOT(act_projectFont()) );
+    connect( m_actionProjectColors, SIGNAL( triggered()), this, SLOT(act_projectColors()) );
 	connect( actionExport_lyric_file, SIGNAL( triggered()), this, SLOT(act_projectExportLyricFile()) );
 	connect( actionExport_video_file, SIGNAL( triggered()), this, SLOT(act_projectExportVideoFile()) );
 	connect( actionExport_CD_G_file, SIGNAL( triggered()), this, SLOT(act_projectExportCDGFile()) );
@@ -312,6 +369,14 @@ void MainWindow::connectActions()
 
     connect( m_blockLinesGroup, &QActionGroup::triggered, this, [this]( QAction * action ) {
         setMaxBlockLines( action->data().toInt() );
+    });
+
+    connect( m_projectFontSizeGroup, &QActionGroup::triggered, this, [this]( QAction * action ) {
+        setProjectFontSize( action->data().toInt() );
+    });
+
+    connect( m_projectVerticalAlignGroup, &QActionGroup::triggered, this, [this]( QAction * action ) {
+        setProjectVerticalAlign( action->data().toInt() );
     });
 }
 
@@ -375,7 +440,8 @@ void MainWindow::lyricsChanged(qint64 time)
         LyricsWidget * lw = new LyricsWidget( m_testWindow );
         lw->setLyrics( lyrics,
                          m_project->tag( Project::Tag_Artist ),
-                         m_project->tag( Project::Tag_Title ) );
+                         m_project->tag( Project::Tag_Title ),
+                         m_project );
 
         m_testWindow->setLyricWidget( lw );
 
@@ -802,7 +868,50 @@ void MainWindow::act_projectSettings()
 	{
 		if ( ps.musicFileChanged() )
             m_mediaPlayer->loadMedia( m_project->musicFile(), MediaPlayer::LoadAudioStream );
+
+        refreshProjectLyricsWidgets();
     }
+}
+
+void MainWindow::act_projectAppearance()
+{
+    ProjectSettings ps( m_project, true, this, ProjectSettings::TabAppearance );
+    ps.setWindowTitle( tr("Edit project appearance" ) );
+
+    if ( ps.exec() == QDialog::Accepted )
+        refreshProjectLyricsWidgets();
+}
+
+void MainWindow::act_projectFont()
+{
+    bool ok = false;
+    QFont initialFont( m_project->tag( Project::Tag_Video_font, pSettings->m_previewFontFamily ) );
+    initialFont.setPointSize( qMax( 1, m_project->tag( Project::Tag_Video_fontsize, QString::number( pSettings->m_previewFontSize ) ).toInt() ) );
+    QFont selectedFont = QFontDialog::getFont( &ok, initialFont, this, tr("Choose project font") );
+
+    if ( !ok )
+        return;
+
+    m_project->setTag( Project::Tag_Video_font, selectedFont.family() );
+    m_project->setTag( Project::Tag_Video_fontsize, QString::number( selectedFont.pointSize() > 0 ? selectedFont.pointSize() : initialFont.pointSize() ) );
+    refreshProjectLyricsWidgets();
+}
+
+void MainWindow::act_projectColors()
+{
+    ProjectSettings ps( m_project, true, this, ProjectSettings::TabAppearance );
+    ps.setWindowTitle( tr("Edit project colors" ) );
+
+    if ( ps.exec() == QDialog::Accepted )
+        refreshProjectLyricsWidgets();
+}
+
+void MainWindow::act_projectVerticalAlign()
+{
+    QAction * action = m_projectVerticalAlignGroup->checkedAction();
+
+    if ( action )
+        setProjectVerticalAlign( action->data().toInt() );
 }
 
 void MainWindow::act_settingsGeneral()
@@ -812,19 +921,19 @@ void MainWindow::act_settingsGeneral()
     syncQuickSettingsActions();
 }
 
-void MainWindow::act_settingsPreviewModeStandard()
+void MainWindow::act_projectModeStandard()
 {
-    setPreviewLayoutMode( 0 );
+    setProjectPreviewLayoutMode( 0 );
 }
 
-void MainWindow::act_settingsPreviewModeSliding()
+void MainWindow::act_projectModeSliding()
 {
-    setPreviewLayoutMode( 1 );
+    setProjectPreviewLayoutMode( 1 );
 }
 
-void MainWindow::act_settingsPreviewModeSubstitute()
+void MainWindow::act_projectModeSubstitute()
 {
-    setPreviewLayoutMode( 2 );
+    setProjectPreviewLayoutMode( 2 );
 }
 
 void MainWindow::act_settingsRealtimeTestUpdate()
@@ -885,6 +994,9 @@ void MainWindow::updateState()
 
 	editor->setEnabled( project_available );
 
+    syncPreviewLayoutModeActions();
+    syncProjectAppearanceActions();
+
 	if ( project_ready )
 	{
 		if ( m_project->isModified() )
@@ -931,11 +1043,34 @@ void MainWindow::act_settingsShowPlayer( bool checked )
         m_playerWidget->hide();
 }
 
-void MainWindow::setPreviewLayoutMode( int mode )
+void MainWindow::setProjectPreviewLayoutMode( int mode )
 {
-    pSettings->m_previewLayoutMode = mode;
-    QSettings().setValue( "preview/layoutmode", mode );
+    if ( !m_project )
+        return;
+
+    m_project->setTag( Project::Tag_Video_LayoutMode, QString::number( mode ) );
     syncPreviewLayoutModeActions();
+    refreshProjectLyricsWidgets();
+}
+
+void MainWindow::setProjectFontSize( int points )
+{
+    if ( !m_project )
+        return;
+
+    m_project->setTag( Project::Tag_Video_fontsize, QString::number( points ) );
+    syncProjectAppearanceActions();
+    refreshProjectLyricsWidgets();
+}
+
+void MainWindow::setProjectVerticalAlign( int align )
+{
+    if ( !m_project )
+        return;
+
+    m_project->setTag( Project::Tag_Video_TextAlignVertical, QString::number( align ) );
+    syncProjectAppearanceActions();
+    refreshProjectLyricsWidgets();
 }
 
 void MainWindow::setRealtimeTestUpdateEnabled( bool enabled )
@@ -968,9 +1103,34 @@ void MainWindow::setMaxBlockLines( int lines )
 
 void MainWindow::syncPreviewLayoutModeActions()
 {
-    m_actionPreviewModeStandard->setChecked( pSettings->m_previewLayoutMode == 0 );
-    m_actionPreviewModeSliding->setChecked( pSettings->m_previewLayoutMode == 1 );
-    m_actionPreviewModeSubstitute->setChecked( pSettings->m_previewLayoutMode == 2 );
+    int mode = m_project ? m_project->tag( Project::Tag_Video_LayoutMode, QString::number( pSettings->m_previewLayoutMode ) ).toInt()
+                         : pSettings->m_previewLayoutMode;
+
+    m_actionPreviewModeStandard->setChecked( mode == 0 );
+    m_actionPreviewModeSliding->setChecked( mode == 1 );
+    m_actionPreviewModeSubstitute->setChecked( mode == 2 );
+}
+
+void MainWindow::syncProjectAppearanceActions()
+{
+    bool enabled = m_project != 0;
+    int fontSize = enabled ? m_project->tag( Project::Tag_Video_fontsize, QString::number( pSettings->m_previewFontSize ) ).toInt()
+                           : pSettings->m_previewFontSize;
+    int verticalAlign = enabled ? m_project->tag( Project::Tag_Video_TextAlignVertical, QString::number( 0 ) ).toInt()
+                                : 0;
+
+    m_actionProjectAppearance->setEnabled( enabled );
+    m_actionProjectFont->setEnabled( enabled );
+    m_actionProjectColors->setEnabled( enabled );
+    m_menuModes->setEnabled( enabled );
+    m_menuProjectFontSize->setEnabled( enabled );
+    m_menuProjectVerticalAlign->setEnabled( enabled );
+
+    for ( QAction * action : m_projectFontSizeGroup->actions() )
+        action->setChecked( action->data().toInt() == fontSize );
+
+    for ( QAction * action : m_projectVerticalAlignGroup->actions() )
+        action->setChecked( action->data().toInt() == verticalAlign );
 }
 
 void MainWindow::syncQuickSettingsActions()
@@ -984,6 +1144,33 @@ void MainWindow::syncQuickSettingsActions()
 
     for ( QAction * action : m_blockLinesGroup->actions() )
         action->setChecked( action->data().toInt() == pSettings->m_editorMaxBlock );
+}
+
+void MainWindow::refreshProjectLyricsWidgets()
+{
+    if ( !m_project )
+        return;
+
+    syncPreviewLayoutModeActions();
+    syncProjectAppearanceActions();
+
+    if ( m_testWindow )
+    {
+        Lyrics lyrics;
+
+        if ( editor->exportLyrics( &lyrics ) )
+        {
+            LyricsWidget * lw = new LyricsWidget( m_testWindow );
+            lw->setLyrics( lyrics,
+                           m_project->tag( Project::Tag_Artist ),
+                           m_project->tag( Project::Tag_Title ),
+                           m_project );
+            m_testWindow->setLyricWidget( lw );
+        }
+    }
+
+    if ( m_previewDock && m_previewDock->isVisible() )
+        refreshPreviewDockLyrics();
 }
 
 void MainWindow::visibilityPlayer( bool visible )
@@ -1019,7 +1206,8 @@ void MainWindow::act_projectTest()
 
 	lw->setLyrics( lyrics,
 					 m_project->tag( Project::Tag_Artist ),
-					 m_project->tag( Project::Tag_Title ) );
+					 m_project->tag( Project::Tag_Title ),
+                     m_project );
 
 	m_testWindow->setLyricWidget( lw );
 	m_testWindow->show();
@@ -1244,7 +1432,8 @@ void MainWindow::refreshPreviewDockLyrics()
     LyricsWidget * widget = new LyricsWidget( m_previewDock );
     widget->setLyrics( lyrics,
                        m_project->tag( Project::Tag_Artist ),
-                       m_project->tag( Project::Tag_Title ) );
+                       m_project->tag( Project::Tag_Title ),
+                       m_project );
 
     if ( m_previewWidget )
         delete m_previewWidget;

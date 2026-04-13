@@ -30,7 +30,15 @@ class ProjectSettings : public QDialog, public Ui::DialogProjectSettings
 	Q_OBJECT
 
 	public:
-		ProjectSettings( Project* proj, bool showtype = true, QWidget * parent = 0 );
+        enum InitialTab
+        {
+            TabDefault = -1,
+            TabGeneral = 0,
+            TabHeader = 1,
+            TabAppearance = 2
+        };
+
+		ProjectSettings( Project* proj, bool showtype = true, QWidget * parent = 0, InitialTab initialTab = TabDefault );
 		bool	musicFileChanged() const { return m_musicFileChanged; }
 
 	public slots:

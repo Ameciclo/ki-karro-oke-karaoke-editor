@@ -35,7 +35,7 @@ class LyricsWidget : public QWidget
 		~LyricsWidget();
 
 		// For lyrics
-		void	setLyrics( const Lyrics& lyrics, const QString& artist = "", const QString& title = "" );
+		void	setLyrics( const Lyrics& lyrics, const QString& artist = "", const QString& title = "", const class Project * project = 0 );
 
 		// For CD+G
 		void	setCDGdata( const QByteArray& cdgdata );

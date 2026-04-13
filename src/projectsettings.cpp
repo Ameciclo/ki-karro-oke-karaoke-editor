@@ -23,8 +23,10 @@
 
 #include "projectsettings.h"
 #include "project.h"
+#include "settings.h"
+#include "textrenderer.h"
 
-ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent )
+ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent, InitialTab initialTab )
 	: QDialog( parent ), Ui::DialogProjectSettings()
 {
 	setupUi( this );
@@ -109,6 +111,26 @@ ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent
 			leUSvideogap->setText( m_project->tag( Project::Tag_VideoGap ) );
 			break;
 	}
+
+    fontVideo->setCurrentFont( QFont( m_project->tag( Project::Tag_Video_font, pSettings->m_previewFontFamily ) ) );
+    spinFontSize->setValue( qMax( 1, m_project->tag( Project::Tag_Video_fontsize, QString::number( pSettings->m_previewFontSize ) ).toInt() ) );
+    btnVideoColorBg->setColor( QColor( m_project->tag( Project::Tag_Video_bgcolor, pSettings->m_previewBackground.name() ) ) );
+    btnVideoColorInfo->setColor( QColor( m_project->tag( Project::Tag_Video_infocolor, QColor( Qt::white ).name() ) ) );
+    btnVideoColorInactive->setColor( QColor( m_project->tag( Project::Tag_Video_inactivecolor, pSettings->m_previewTextInactive.name() ) ) );
+    btnVideoColorActive->setColor( QColor( m_project->tag( Project::Tag_Video_activecolor, pSettings->m_previewTextActive.name() ) ) );
+    boxPreviewLayoutMode->setCurrentIndex( m_project->tag( Project::Tag_Video_LayoutMode, QString::number( pSettings->m_previewLayoutMode ) ).toInt() );
+    boxTextVerticalAlign->setCurrentIndex( m_project->tag( Project::Tag_Video_TextAlignVertical, QString::number( TextRenderer::VerticalBottom ) ).toInt() );
+
+    if ( initialTab != TabDefault )
+    {
+        int index = initialTab;
+
+        if ( !m_generalTabShown && index > TabGeneral )
+            index -= 1;
+
+        if ( index >= 0 && index < tabSettings->count() )
+            tabSettings->setCurrentIndex( index );
+    }
 
 	// Scale down the dialog as part of it is hidden
 	resize( QSize( width(), 1 ) );
@@ -238,6 +260,15 @@ void ProjectSettings::accept()
 		m_project->setTag( Project::Tag_Video, leUSvideo->text() );
 		m_project->setTag( Project::Tag_VideoGap, leUSvideogap->text() );
 	}
+
+    m_project->setTag( Project::Tag_Video_font, fontVideo->currentFont().family() );
+    m_project->setTag( Project::Tag_Video_fontsize, QString::number( spinFontSize->value() ) );
+    m_project->setTag( Project::Tag_Video_bgcolor, btnVideoColorBg->color().name() );
+    m_project->setTag( Project::Tag_Video_infocolor, btnVideoColorInfo->color().name() );
+    m_project->setTag( Project::Tag_Video_inactivecolor, btnVideoColorInactive->color().name() );
+    m_project->setTag( Project::Tag_Video_activecolor, btnVideoColorActive->color().name() );
+    m_project->setTag( Project::Tag_Video_LayoutMode, QString::number( boxPreviewLayoutMode->currentIndex() ) );
+    m_project->setTag( Project::Tag_Video_TextAlignVertical, QString::number( boxTextVerticalAlign->currentIndex() ) );
 
 	QDialog::accept();
 }
