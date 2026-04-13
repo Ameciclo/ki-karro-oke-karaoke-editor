@@ -35,7 +35,10 @@ class TestWindow;
 class RecentFiles;
 class QAction;
 class QActionGroup;
+class QDockWidget;
 class QMenu;
+class QToolBar;
+class LyricsWidget;
 
 
 class MainWindow : public QMainWindow, public Ui::MainWindow
@@ -101,6 +104,7 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 
 		// Dock widgets
 		void	visibilityPlayer( bool visible );
+        void    visibilityPreview( bool visible );
 
 		// Test window
 		void	testWindowClosed();
@@ -124,6 +128,7 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		void	checkNewVersionAvailable();
 		void	connectActions();
 		void	createToolbars();
+        void    refreshPreviewDockLyrics();
         void    setPreviewLayoutMode( int mode );
         void    syncPreviewLayoutModeActions();
 		void	setCurrentProject( Project * proj );
@@ -142,6 +147,8 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
 		Project				*	m_project;
 		ViewWidget			*	m_viewer;
 		TestWindow			*	m_testWindow;
+        QDockWidget         *   m_previewDock;
+        LyricsWidget        *   m_previewWidget;
 		RecentFiles			*	m_recentFiles;
 		QAction             *   m_actionPrevTimingTag;
 		QAction             *   m_actionNextTimingTag;
@@ -150,6 +157,9 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
         QAction             *   m_actionPreviewModeStandard;
         QAction             *   m_actionPreviewModeSliding;
         QAction             *   m_actionPreviewModeSubstitute;
+        QToolBar            *   m_projectToolBar;
+        QToolBar            *   m_timingToolBar;
+        QToolBar            *   m_lyricsToolBar;
 		QString					m_projectFile;
 
 		// Validator icons

@@ -26,6 +26,7 @@
 #include <QDateTime>
 #include <QActionGroup>
 #include <QColorDialog>
+#include <QDockWidget>
 #include <QDesktopServices>
 #include <QUrl>
 
@@ -91,17 +92,31 @@ MainWindow::MainWindow()
     m_previewModeGroup->addAction( m_actionPreviewModeSliding );
     m_previewModeGroup->addAction( m_actionPreviewModeSubstitute );
 
-    menuSettings->insertMenu( actionShow_Player_dock_wingow, m_menuModes );
+    menuSettings->addMenu( m_menuModes );
 
 	// Initialize stuff
 	m_project = 0;
 	m_testWindow = 0;
     m_mediaPlayer = 0;
+    m_previewDock = 0;
+    m_previewWidget = 0;
+    m_projectToolBar = 0;
+    m_timingToolBar = 0;
+    m_lyricsToolBar = 0;
 
 	// Create dock widgets
     m_playerWidget = new PlayerWidget( this );
     addDockWidget( Qt::BottomDockWidgetArea, m_playerWidget );
 	actionShow_Player_dock_wingow->setChecked( true );
+
+    m_previewDock = new QDockWidget( tr("Preview"), this );
+    m_previewDock->setObjectName( "PreviewDock" );
+    m_previewDock->setAllowedAreas( Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea | Qt::BottomDockWidgetArea );
+    addDockWidget( Qt::RightDockWidgetArea, m_previewDock );
+    m_previewDock->hide();
+
+    m_previewDock->toggleViewAction()->setText( tr("Show Preview") );
+    actionShow_Player_dock_wingow->setText( tr("Show Player") );
 
 	// Create a lyric viewer window, hidden so far
 	m_viewer = new ViewWidget( this );
@@ -113,6 +128,13 @@ MainWindow::MainWindow()
 	// Do the rest
 	connectActions();
 	createToolbars();
+
+    menuView->addSeparator();
+    menuView->addAction( m_previewDock->toggleViewAction() );
+    menuView->addSeparator();
+    menuView->addAction( m_projectToolBar->toggleViewAction() );
+    menuView->addAction( m_timingToolBar->toggleViewAction() );
+    menuView->addAction( m_lyricsToolBar->toggleViewAction() );
 
 	// Add WhatsThis action to the help menu
 	QAction * whatsthis = QWhatsThis::createAction( this );
@@ -225,6 +247,7 @@ void MainWindow::connectActions()
 
     // Player widget
     connect( m_playerWidget,SIGNAL(visibilityChanged(bool)), this, SLOT(visibilityPlayer(bool)) );
+    connect( m_previewDock, SIGNAL(visibilityChanged(bool)), this, SLOT(visibilityPreview(bool)) );
     connect( m_playerWidget->btnPausePlay,SIGNAL(clicked()), this, SLOT(playerPlayPause()) );
     connect( m_playerWidget->btnStop,SIGNAL(clicked()), this, SLOT(playerStop()) );
     connect( m_playerWidget->spinPitch, SIGNAL(valueChanged(int)), this, SLOT(playerSettingsChanged()) );
@@ -242,24 +265,33 @@ void MainWindow::connectActions()
 
 void MainWindow::createToolbars()
 {
-	// Main toolbar
-	QToolBar * main = addToolBar( "Main toolbar" );
-	main->addAction( actionNew_project );
-	main->addAction( actionSave );
+	m_projectToolBar = addToolBar( tr("Project toolbar") );
+    m_projectToolBar->addAction( actionNew_project );
+    m_projectToolBar->addAction( action_openProject );
+    m_projectToolBar->addAction( actionSave );
+    m_projectToolBar->addAction( actionExport_video_file );
 
-	// Editor toolbar
-	QToolBar * editor = addToolBar( "Editor toolbar" );
-	editor->addAction( actionUndo );
-	editor->addAction( actionRedo );
-	editor->addSeparator();
-	editor->addAction( actionInsert_tag );
-	editor->addAction( actionRemove_tag );
-	editor->addAction( m_actionPrevTimingTag );
-	editor->addAction( m_actionNextTimingTag );
-	editor->addSeparator();
-	editor->addAction( actionValidate_lyrics );
-	editor->addAction( actionView_lyric_file );
-	editor->addAction( actionTest_lyric_file );
+    m_timingToolBar = addToolBar( tr("Timing toolbar") );
+    m_timingToolBar->addAction( actionInsert_tag );
+    m_timingToolBar->addAction( actionRemove_tag );
+    m_timingToolBar->addAction( m_actionPrevTimingTag );
+    m_timingToolBar->addAction( m_actionNextTimingTag );
+    m_timingToolBar->addSeparator();
+    m_timingToolBar->addAction( actionAdd_eol_timing_marks );
+    m_timingToolBar->addAction( actionTime_adjustment );
+
+    m_lyricsToolBar = addToolBar( tr("Lyrics toolbar") );
+    m_lyricsToolBar->addAction( actionUndo );
+    m_lyricsToolBar->addAction( actionRedo );
+    m_lyricsToolBar->addSeparator();
+    m_lyricsToolBar->addAction( actionOpen_lyric_file );
+    m_lyricsToolBar->addAction( actionValidate_lyrics );
+    m_lyricsToolBar->addAction( actionView_lyric_file );
+    m_lyricsToolBar->addAction( actionTest_lyric_file );
+
+    m_projectToolBar->toggleViewAction()->setText( tr("Show Project Toolbar") );
+    m_timingToolBar->toggleViewAction()->setText( tr("Show Timing Toolbar") );
+    m_lyricsToolBar->toggleViewAction()->setText( tr("Show Lyrics Toolbar") );
 
 	// Style for all main window toolbars
 	setIconSize ( QSize( 32, 32 ) );
@@ -298,6 +330,9 @@ void MainWindow::lyricsChanged(qint64 time)
         if ( m_mediaPlayer->isPlaying() && pSettings->m_editorAutoUpdatePlayerBackseek > 0 )
             playerSeekToTime( time - pSettings->m_editorAutoUpdatePlayerBackseek * 1000 );
     }
+
+    if ( m_previewDock && m_previewDock->isVisible() )
+        refreshPreviewDockLyrics();
 }
 
 void MainWindow::act_fileNewProject()
@@ -861,6 +896,12 @@ void MainWindow::visibilityPlayer( bool visible )
 	actionShow_Player_dock_wingow->setChecked( visible );
 }
 
+void MainWindow::visibilityPreview( bool visible )
+{
+    if ( visible )
+        refreshPreviewDockLyrics();
+}
+
 void MainWindow::act_projectTest()
 {
 	if ( !editor->validate() )
@@ -1090,6 +1131,34 @@ void MainWindow::playerWidget_updateUI()
 
     if ( m_testWindow )
         m_testWindow->tick( currentPosition, m_mediaPlayer->duration() );
+
+    if ( m_previewWidget )
+        m_previewWidget->updateLyrics( currentPosition );
+}
+
+void MainWindow::refreshPreviewDockLyrics()
+{
+    if ( !m_previewDock || !m_project )
+        return;
+
+    Lyrics lyrics;
+
+    if ( !editor->exportLyrics( &lyrics ) )
+        return;
+
+    LyricsWidget * widget = new LyricsWidget( m_previewDock );
+    widget->setLyrics( lyrics,
+                       m_project->tag( Project::Tag_Artist ),
+                       m_project->tag( Project::Tag_Title ) );
+
+    if ( m_previewWidget )
+        delete m_previewWidget;
+
+    m_previewWidget = widget;
+    m_previewDock->setWidget( m_previewWidget );
+
+    if ( m_mediaPlayer )
+        m_previewWidget->updateLyrics( m_mediaPlayer->position() );
 }
 
 void MainWindow::mediaDurationChanged()
