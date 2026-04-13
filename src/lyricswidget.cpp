@@ -30,6 +30,21 @@
 static const unsigned int PADDING_X = 10;
 static const unsigned int PADDING_Y = 8;
 
+static int effectiveProjectFontSize( TextRenderer * renderer, const Project * project )
+{
+    int mode = project->tag( Project::Tag_Video_FontSizeMode, "0" ).toInt();
+    int manualSize = qMax( 1, project->tag( Project::Tag_Video_fontsize, QString::number( pSettings->m_previewFontSize ) ).toInt() );
+
+    if ( mode == 0 )
+        return manualSize;
+
+    int percent = qBound( 40, project->tag( Project::Tag_Video_FontSizePercent, "100" ).toInt(), 100 );
+    QFont baseFont( project->tag( Project::Tag_Video_font, pSettings->m_previewFontFamily ) );
+    int maxSize = renderer->autodetectFontSize( QSize( 720, 480 ), baseFont );
+
+    return qMax( 1, ( maxSize * percent ) / 100 );
+}
+
 LyricsWidget::LyricsWidget( QWidget *parent )
 	: QWidget(parent)
 {
@@ -88,7 +103,7 @@ void LyricsWidget::setLyrics( const Lyrics& lyrics, const QString& artist, const
     if ( project )
     {
         re->setRenderFont( QFont( project->tag( Project::Tag_Video_font, pSettings->m_previewFontFamily ),
-                                  qMax( 1, project->tag( Project::Tag_Video_fontsize, QString::number( pSettings->m_previewFontSize ) ).toInt() ) ) );
+                                  effectiveProjectFontSize( re, project ) ) );
         re->setColorBackground( QColor( project->tag( Project::Tag_Video_bgcolor, pSettings->m_previewBackground.name() ) ) );
         re->setColorTitle( QColor( project->tag( Project::Tag_Video_infocolor, QColor( Qt::white ).name() ) ) );
         re->setColorSang( QColor( project->tag( Project::Tag_Video_inactivecolor, pSettings->m_previewTextInactive.name() ) ) );

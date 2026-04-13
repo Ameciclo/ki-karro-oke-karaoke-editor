@@ -61,6 +61,7 @@ class DialogExportOptions : public QDialog, public Ui::DialogExportParams
 	private:
 		void	setBoxIndex( Project::Tag tag, QComboBox * box );
         int     calculateLargestFontSize(const QFont &font);
+        int     currentRenderPointSize(const QFont &font);
         bool    testFontSize();
 
 	private:

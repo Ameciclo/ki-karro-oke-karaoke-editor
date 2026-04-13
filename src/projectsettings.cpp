@@ -35,6 +35,7 @@ ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent
 	connect( rbLRC1, SIGNAL( toggled(bool)), this, SLOT(changeProjectType()) );
 	connect( rbLRC2, SIGNAL( toggled(bool)), this, SLOT(changeProjectType()) );
 	connect( rbLRC3, SIGNAL( toggled(bool)), this, SLOT(changeProjectType()) );
+    connect( boxFontSizeMode, SIGNAL(currentIndexChanged(int)), this, SLOT(changeFontSizeMode()) );
 
 	m_project = proj;
 	m_musicFileChanged = false;
@@ -114,12 +115,15 @@ ProjectSettings::ProjectSettings( Project* proj, bool showtype, QWidget * parent
 
     fontVideo->setCurrentFont( QFont( m_project->tag( Project::Tag_Video_font, pSettings->m_previewFontFamily ) ) );
     spinFontSize->setValue( qMax( 1, m_project->tag( Project::Tag_Video_fontsize, QString::number( pSettings->m_previewFontSize ) ).toInt() ) );
+    boxFontSizeMode->setCurrentIndex( m_project->tag( Project::Tag_Video_FontSizeMode, "0" ).toInt() );
+    spinFontRelativeFit->setValue( m_project->tag( Project::Tag_Video_FontSizePercent, "100" ).toInt() );
     btnVideoColorBg->setColor( QColor( m_project->tag( Project::Tag_Video_bgcolor, pSettings->m_previewBackground.name() ) ) );
     btnVideoColorInfo->setColor( QColor( m_project->tag( Project::Tag_Video_infocolor, QColor( Qt::white ).name() ) ) );
     btnVideoColorInactive->setColor( QColor( m_project->tag( Project::Tag_Video_inactivecolor, pSettings->m_previewTextInactive.name() ) ) );
     btnVideoColorActive->setColor( QColor( m_project->tag( Project::Tag_Video_activecolor, pSettings->m_previewTextActive.name() ) ) );
     boxPreviewLayoutMode->setCurrentIndex( m_project->tag( Project::Tag_Video_LayoutMode, QString::number( pSettings->m_previewLayoutMode ) ).toInt() );
     boxTextVerticalAlign->setCurrentIndex( m_project->tag( Project::Tag_Video_TextAlignVertical, QString::number( TextRenderer::VerticalBottom ) ).toInt() );
+    changeFontSizeMode();
 
     if ( initialTab != TabDefault )
     {
@@ -190,6 +194,13 @@ void ProjectSettings::changeProjectType()
 		// Hide ultrastar group
 		groupUStar->show();
 	}
+}
+
+void ProjectSettings::changeFontSizeMode()
+{
+    bool manual = boxFontSizeMode->currentIndex() == 0;
+    spinFontSize->setEnabled( manual );
+    spinFontRelativeFit->setEnabled( !manual );
 }
 
 void ProjectSettings::accept()
@@ -278,6 +289,8 @@ void ProjectSettings::accept()
 
     m_project->setTag( Project::Tag_Video_font, fontVideo->currentFont().family() );
     m_project->setTag( Project::Tag_Video_fontsize, QString::number( spinFontSize->value() ) );
+    m_project->setTag( Project::Tag_Video_FontSizeMode, QString::number( boxFontSizeMode->currentIndex() ) );
+    m_project->setTag( Project::Tag_Video_FontSizePercent, QString::number( spinFontRelativeFit->value() ) );
     m_project->setTag( Project::Tag_Video_bgcolor, btnVideoColorBg->color().name() );
     m_project->setTag( Project::Tag_Video_infocolor, btnVideoColorInfo->color().name() );
     m_project->setTag( Project::Tag_Video_inactivecolor, btnVideoColorInactive->color().name() );

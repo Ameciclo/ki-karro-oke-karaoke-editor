@@ -94,6 +94,7 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
         void    act_projectColorInformation();
         void    act_projectColorSung();
         void    act_projectColorToSing();
+        void    act_projectRelativeFit();
 
 		void	act_settingsGeneral();
 		void	act_settingsShowPlayer( bool checked );
@@ -143,6 +144,7 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
         void    setMaxBlockLines( int lines );
         void    setProjectPreviewLayoutMode( int mode );
         void    setProjectFontSize( int points );
+        void    setProjectRelativeFitPercent( int percent );
         void    setProjectVerticalAlign( int align );
         void    setProjectColor( int tag, const QString& title );
         void    syncPreviewLayoutModeActions();
@@ -174,12 +176,14 @@ class MainWindow : public QMainWindow, public Ui::MainWindow
         QMenu               *   m_menuRealtimeSeekBack;
         QMenu               *   m_menuBlockLines;
         QMenu               *   m_menuProjectFontSize;
+        QMenu               *   m_menuProjectRelativeFit;
         QMenu               *   m_menuProjectColors;
         QMenu               *   m_menuProjectVerticalAlign;
         QActionGroup        *   m_previewModeGroup;
         QActionGroup        *   m_realtimeSeekBackGroup;
         QActionGroup        *   m_blockLinesGroup;
         QActionGroup        *   m_projectFontSizeGroup;
+        QActionGroup        *   m_projectRelativeFitGroup;
         QActionGroup        *   m_projectVerticalAlignGroup;
         QAction             *   m_actionPreviewModeStandard;
         QAction             *   m_actionPreviewModeSliding;

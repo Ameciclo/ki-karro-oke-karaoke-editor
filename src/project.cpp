@@ -101,6 +101,8 @@ enum
 	PD_TAG_VIDEO_NCOLOR,	// Video tag - inactive (sung) color
 	PD_TAG_VIDEO_FONT,		// Video tag - font family
 	PD_TAG_VIDEO_FONTSIZE,	// Video tag - font size
+    PD_TAG_VIDEO_FONTMODE,  // Video tag - font size mode
+    PD_TAG_VIDEO_FONTPERCENT, // Video tag - relative fit percent
 	PD_TAG_VIDEO_MINTITLE,	// Video tag - minimum title time
 	PD_TAG_VIDEO_PREAMBLE,	// Video tag - whether to show squares
 	PD_TAG_VIDEO_BGFILE,	// unused
@@ -163,6 +165,8 @@ void Project::clear()
     m_projectData[ PD_TAG_EXPORT_CDG_TEXT_ALIGN_VERTICAL ] = QString::number( TextRenderer::VerticalBottom );
     m_projectData[ PD_TAG_EXPORT_VIDEO_TEXT_ALIGN_VERTICAL ] = QString::number( TextRenderer::VerticalBottom );
     m_projectData[ PD_TAG_EXPORT_VIDEO_LAYOUT_MODE ] = QString::number( pSettings->m_previewLayoutMode );
+    m_projectData[ PD_TAG_VIDEO_FONTMODE ] = "0";
+    m_projectData[ PD_TAG_VIDEO_FONTPERCENT ] = "100";
 
 	m_totalSongLength = 0;
 }
@@ -376,6 +380,14 @@ int	Project::tagToId( Tag tag  ) const
 		case Tag_Video_fontsize:
 			tagid = PD_TAG_VIDEO_FONTSIZE;
 			break;
+
+        case Tag_Video_FontSizeMode:
+            tagid = PD_TAG_VIDEO_FONTMODE;
+            break;
+
+        case Tag_Video_FontSizePercent:
+            tagid = PD_TAG_VIDEO_FONTPERCENT;
+            break;
 
 		case Tag_Video_titletime:
 			tagid = PD_TAG_VIDEO_MINTITLE;

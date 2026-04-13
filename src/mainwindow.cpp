@@ -125,6 +125,10 @@ MainWindow::MainWindow()
     m_projectFontSizeGroup = new QActionGroup( this );
     m_projectFontSizeGroup->setExclusive( true );
 
+    m_menuProjectRelativeFit = new QMenu( tr("Relative Fit"), this );
+    m_projectRelativeFitGroup = new QActionGroup( this );
+    m_projectRelativeFitGroup->setExclusive( true );
+
     m_menuProjectColors = new QMenu( tr("Colors"), this );
     m_menuProjectColors->addAction( tr("Background..."), this, SLOT(act_projectColorBackground()) );
     m_menuProjectColors->addAction( tr("Information..."), this, SLOT(act_projectColorInformation()) );
@@ -132,6 +136,7 @@ MainWindow::MainWindow()
     m_menuProjectColors->addAction( tr("Not Sung Yet..."), this, SLOT(act_projectColorToSing()) );
 
     const int fontSizeOptions[] = { 18, 20, 24, 28, 32, 36, 42, 48 };
+    const int relativeFitOptions[] = { 60, 70, 80, 90, 100 };
 
     for ( unsigned int i = 0; i < sizeof( fontSizeOptions ) / sizeof( int ); ++i )
     {
@@ -140,6 +145,15 @@ MainWindow::MainWindow()
         action->setCheckable( true );
         action->setData( points );
         m_projectFontSizeGroup->addAction( action );
+    }
+
+    for ( unsigned int i = 0; i < sizeof( relativeFitOptions ) / sizeof( int ); ++i )
+    {
+        int percent = relativeFitOptions[i];
+        QAction * action = m_menuProjectRelativeFit->addAction( tr("%1%").arg( percent ) );
+        action->setCheckable( true );
+        action->setData( percent );
+        m_projectRelativeFitGroup->addAction( action );
     }
 
     m_menuProjectVerticalAlign = new QMenu( tr("Vertical Align"), this );
@@ -183,6 +197,7 @@ MainWindow::MainWindow()
     menuProject->addMenu( m_menuModes );
     menuProject->addAction( m_actionProjectFont );
     menuProject->addMenu( m_menuProjectFontSize );
+    menuProject->addMenu( m_menuProjectRelativeFit );
     menuProject->addMenu( m_menuProjectColors );
     menuProject->addMenu( m_menuProjectVerticalAlign );
     menuProject->addSeparator();
@@ -377,6 +392,10 @@ void MainWindow::connectActions()
 
     connect( m_projectFontSizeGroup, &QActionGroup::triggered, this, [this]( QAction * action ) {
         setProjectFontSize( action->data().toInt() );
+    });
+
+    connect( m_projectRelativeFitGroup, &QActionGroup::triggered, this, [this]( QAction * action ) {
+        setProjectRelativeFitPercent( action->data().toInt() );
     });
 
     connect( m_projectVerticalAlignGroup, &QActionGroup::triggered, this, [this]( QAction * action ) {
@@ -897,7 +916,10 @@ void MainWindow::act_projectFont()
         return;
 
     m_project->setTag( Project::Tag_Video_font, selectedFont.family() );
-    m_project->setTag( Project::Tag_Video_fontsize, QString::number( selectedFont.pointSize() > 0 ? selectedFont.pointSize() : initialFont.pointSize() ) );
+
+    if ( m_project->tag( Project::Tag_Video_FontSizeMode, "0" ).toInt() == 0 )
+        m_project->setTag( Project::Tag_Video_fontsize, QString::number( selectedFont.pointSize() > 0 ? selectedFont.pointSize() : initialFont.pointSize() ) );
+
     refreshProjectLyricsWidgets();
 }
 
@@ -927,6 +949,14 @@ void MainWindow::act_projectColorSung()
 void MainWindow::act_projectColorToSing()
 {
     setProjectColor( Project::Tag_Video_activecolor, tr("Select not sung yet color") );
+}
+
+void MainWindow::act_projectRelativeFit()
+{
+    QAction * action = m_projectRelativeFitGroup->checkedAction();
+
+    if ( action )
+        setProjectRelativeFitPercent( action->data().toInt() );
 }
 
 void MainWindow::act_settingsGeneral()
@@ -1073,7 +1103,19 @@ void MainWindow::setProjectFontSize( int points )
     if ( !m_project )
         return;
 
+    m_project->setTag( Project::Tag_Video_FontSizeMode, "0" );
     m_project->setTag( Project::Tag_Video_fontsize, QString::number( points ) );
+    syncProjectAppearanceActions();
+    refreshProjectLyricsWidgets();
+}
+
+void MainWindow::setProjectRelativeFitPercent( int percent )
+{
+    if ( !m_project )
+        return;
+
+    m_project->setTag( Project::Tag_Video_FontSizeMode, "1" );
+    m_project->setTag( Project::Tag_Video_FontSizePercent, QString::number( percent ) );
     syncProjectAppearanceActions();
     refreshProjectLyricsWidgets();
 }
@@ -1144,8 +1186,11 @@ void MainWindow::syncPreviewLayoutModeActions()
 void MainWindow::syncProjectAppearanceActions()
 {
     bool enabled = m_project != 0;
+    int fontMode = enabled ? m_project->tag( Project::Tag_Video_FontSizeMode, "0" ).toInt() : 0;
     int fontSize = enabled ? m_project->tag( Project::Tag_Video_fontsize, QString::number( pSettings->m_previewFontSize ) ).toInt()
                            : pSettings->m_previewFontSize;
+    int fontPercent = enabled ? m_project->tag( Project::Tag_Video_FontSizePercent, "100" ).toInt()
+                              : 100;
     int verticalAlign = enabled ? m_project->tag( Project::Tag_Video_TextAlignVertical, QString::number( 0 ) ).toInt()
                                 : 0;
 
@@ -1153,11 +1198,15 @@ void MainWindow::syncProjectAppearanceActions()
     m_actionProjectFont->setEnabled( enabled );
     m_menuModes->setEnabled( enabled );
     m_menuProjectFontSize->setEnabled( enabled );
+    m_menuProjectRelativeFit->setEnabled( enabled );
     m_menuProjectColors->setEnabled( enabled );
     m_menuProjectVerticalAlign->setEnabled( enabled );
 
     for ( QAction * action : m_projectFontSizeGroup->actions() )
-        action->setChecked( action->data().toInt() == fontSize );
+        action->setChecked( fontMode == 0 && action->data().toInt() == fontSize );
+
+    for ( QAction * action : m_projectRelativeFitGroup->actions() )
+        action->setChecked( fontMode == 1 && action->data().toInt() == fontPercent );
 
     for ( QAction * action : m_projectVerticalAlignGroup->actions() )
         action->setChecked( action->data().toInt() == verticalAlign );

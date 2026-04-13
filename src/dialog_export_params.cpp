@@ -65,6 +65,8 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
     boxVideoResolution->addItem( "HD 1280x720", "1280x720" );
     boxVideoResolution->addItem( "Full HD 1920x1080", "1920x1080" );
 
+    boxVideoResolution->setCurrentIndex( 2 );
+
     if ( pSettings->isRegistered() )
         boxVideoResolution->addItem( "Ultra HD 3840x2160", "3840x2160" );
 
@@ -85,8 +87,11 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
     fontVideoStyle->addItem( "X-Bold", QFont::ExtraBold );
     fontVideoStyle->setCurrentIndex( 2 );
 
-	if ( video )
+    if ( video )
 	{
+        boxFontVideoSizeType->setItemText( 0, tr("Manual") );
+        boxFontVideoSizeType->setItemText( 1, tr("Relative fit") );
+
 		// Set the video output params
 		btnVideoColorActive->setColor( m_project->tag( Project::Tag_Video_activecolor, "blue" ) );
 		btnVideoColorBg->setColor( m_project->tag( Project::Tag_Video_bgcolor, "black" ) );
@@ -137,7 +142,16 @@ DialogExportOptions::DialogExportOptions( Project * project, const Lyrics& lyric
 
     int fontsizevalue = m_project->tag( video ? Project::Tag_Video_fontsize : Project::Tag_CDG_fontsize, "0" ).toInt();
 
-    if ( fontsizevalue > 0 )
+    if ( video )
+    {
+        boxFontVideoSizeType->setCurrentIndex( m_project->tag( Project::Tag_Video_FontSizeMode, "0" ).toInt() );
+
+        if ( boxFontVideoSizeType->currentIndex() == 0 )
+            spinFontSize->setValue( qMax( 1, fontsizevalue ) );
+        else
+            spinFontSize->setValue( m_project->tag( Project::Tag_Video_FontSizePercent, "100" ).toInt() );
+    }
+    else if ( fontsizevalue > 0 )
     {
         boxFontVideoSizeType->setCurrentIndex( 0 );
         spinFontSize->setValue( fontsizevalue );
@@ -204,7 +218,7 @@ int DialogExportOptions::calculateLargestFontSize( const QFont& font )
 bool DialogExportOptions::testFontSize()
 {
     QFont font = fontVideo->currentFont();
-    font.setPointSize( spinFontSize->value() );
+    font.setPointSize( currentRenderPointSize( font ) );
 
     // Ask the renderer
     TextRenderer renderer( 100, 100 );
@@ -287,10 +301,12 @@ void DialogExportOptions::accept()
 		m_project->setTag( Project::Tag_Video_infocolor, btnVideoColorInfo->color().name() );
 		m_project->setTag( Project::Tag_Video_font, fontVideo->currentFont().family() );
 
+        m_project->setTag( Project::Tag_Video_FontSizeMode, QString::number( boxFontVideoSizeType->currentIndex() ) );
+
         if ( boxFontVideoSizeType->currentIndex() == 0 )
             m_project->setTag( Project::Tag_Video_fontsize, QString::number( spinFontSize->value() ) );
         else
-            m_project->setTag( Project::Tag_Video_fontsize, "0" );
+            m_project->setTag( Project::Tag_Video_FontSizePercent, QString::number( spinFontSize->value() ) );
 
 		m_project->setTag( Project::Tag_Video_titletime, QString::number( titleVideoMin->value() ) );
 		m_project->setTag( Project::Tag_Video_preamble, cbVideoPreamble->isChecked() ? "1" : "0" );
@@ -369,10 +385,7 @@ void DialogExportOptions::activateTab( int index )
     font.setWeight( (QFont::Weight) fontVideoStyle->currentData().toInt( ) );
 
     // Autofit or fixed size?
-    if ( boxFontVideoSizeType->currentIndex() == 0 )
-        font.setPointSize( spinFontSize->value() );
-    else
-        font.setPointSize( calculateLargestFontSize(font) );
+    font.setPointSize( currentRenderPointSize( font ) );
 
     m_renderer = TextRenderer( getVideoSize().width(), getVideoSize().height() );
 
@@ -436,14 +449,35 @@ void DialogExportOptions::previewSliderMoved( int newvalue )
 void DialogExportOptions::recalculateLargestFontSize()
 {
     int maxsize = calculateLargestFontSize( fontVideo->currentFont() );
-    spinFontSize->setMaximum( maxsize );
 
-    if ( boxFontVideoSizeType->currentIndex() == 1 )
-        spinFontSize->setValue( maxsize );
+    if ( !m_videomode || boxFontVideoSizeType->currentIndex() == 0 )
+        spinFontSize->setMaximum( maxsize );
 }
 
 void DialogExportOptions::fontSizeStrategyChanged(int index)
 {
+    if ( m_videomode )
+    {
+        spinFontSize->setEnabled( true );
+
+        if ( index == 0 )
+        {
+            spinFontSize->setSuffix( "px" );
+            spinFontSize->setMinimum( 4 );
+            spinFontSize->setMaximum( calculateLargestFontSize( fontVideo->currentFont() ) );
+            spinFontSize->setValue( qMin( spinFontSize->value(), spinFontSize->maximum() ) );
+        }
+        else
+        {
+            spinFontSize->setSuffix( "%" );
+            spinFontSize->setMinimum( 40 );
+            spinFontSize->setMaximum( 100 );
+            spinFontSize->setValue( qBound( 40, spinFontSize->value(), 100 ) );
+        }
+
+        return;
+    }
+
     if ( index == 0 )
     {
         // Fixed size strategy
@@ -463,4 +497,19 @@ void DialogExportOptions::fontSizeStrategyChanged(int index)
 void DialogExportOptions::videoProfileChanged(int index)
 {
     leCustomProfile->setHidden( boxVideoProfile->itemData( index ).toString() != "CUSTOM" );
+}
+int DialogExportOptions::currentRenderPointSize(const QFont &font)
+{
+    if ( boxFontVideoSizeType->currentIndex() == 0 )
+        return spinFontSize->value();
+
+    int maxSize = calculateLargestFontSize( font );
+
+    if ( m_videomode )
+    {
+        int percent = qBound( 40, spinFontSize->value(), 100 );
+        return qMax( 1, ( maxSize * percent ) / 100 );
+    }
+
+    return maxSize;
 }

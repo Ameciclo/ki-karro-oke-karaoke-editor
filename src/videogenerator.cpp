@@ -29,6 +29,21 @@
 #include "playerwidget.h"
 #include "settings.h"
 
+static int effectiveVideoFontSizeForResolution( TextRenderer * renderer, Project * project, const QSize& resolution )
+{
+    int mode = project->tag( Project::Tag_Video_FontSizeMode, "0" ).toInt();
+    int manualSize = qMax( 1, project->tag( Project::Tag_Video_fontsize, "24" ).toInt() );
+
+    if ( mode == 0 )
+        return manualSize;
+
+    int percent = qBound( 40, project->tag( Project::Tag_Video_FontSizePercent, "100" ).toInt(), 100 );
+    QFont baseFont( project->tag( Project::Tag_Video_font ) );
+    int maxSize = renderer->autodetectFontSize( resolution, baseFont );
+
+    return qMax( 1, ( maxSize * percent ) / 100 );
+}
+
 VideoGenerator::VideoGenerator( Project * prj, const Lyrics &lyrics, qint64 totaltime )
     : QDialog(), m_lyrics(lyrics)
 {
@@ -66,10 +81,7 @@ void VideoGenerator::generate( PlayerWidget * widget )
 
     // Rendering font
     QFont renderFont( m_project->tag(Project::Tag_Video_font ) );
-    int fontsize = m_project->tag(Project::Tag_Video_fontsize).toInt();
-
-    if ( fontsize == 0 )
-        fontsize = lyricrenderer->autodetectFontSize( resolution, renderFont );
+    int fontsize = effectiveVideoFontSizeForResolution( lyricrenderer, m_project, resolution );
 
     renderFont.setPointSize( fontsize );
 

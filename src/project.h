@@ -69,6 +69,8 @@ class Project
 			Tag_Video_inactivecolor,
 			Tag_Video_font,
 			Tag_Video_fontsize,
+            Tag_Video_FontSizeMode,
+            Tag_Video_FontSizePercent,
 			Tag_Video_titletime,
             Tag_Video_preamble,
 
