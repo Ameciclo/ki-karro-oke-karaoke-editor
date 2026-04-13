@@ -58,6 +58,7 @@ void VideoGenerator::generate( PlayerWidget * widget )
 
     // Must be set before lyrics
     lyricrenderer->setDefaultVerticalAlign( (TextRenderer::VerticalAlignment) m_project->tag( Project::Tag_Video_TextAlignVertical, QString::number( TextRenderer::VerticalBottom ) ).toInt() );
+    lyricrenderer->setLayoutMode( (TextRenderer::LayoutMode) pSettings->m_previewLayoutMode );
 
     // The order matters because setLyrics resets font and colors
     lyricrenderer->setLyrics( m_lyrics );

@@ -187,6 +187,7 @@ int DialogExportOptions::calculateLargestFontSize( const QFont& font )
 {
 	// Ask the renderer
 	TextRenderer renderer( 100, 100 );
+    renderer.setLayoutMode( (TextRenderer::LayoutMode) pSettings->m_previewLayoutMode );
 	renderer.setLyrics( m_lyrics );
     renderer.setRenderFont( font );
 
@@ -205,6 +206,7 @@ bool DialogExportOptions::testFontSize()
 
     // Ask the renderer
     TextRenderer renderer( 100, 100 );
+    renderer.setLayoutMode( (TextRenderer::LayoutMode) pSettings->m_previewLayoutMode );
     renderer.setLyrics( m_lyrics );
     renderer.setRenderFont( font );
 
@@ -373,6 +375,7 @@ void DialogExportOptions::activateTab( int index )
 
     // The order here matters because setLyrics resets font and colors
     m_renderer.setDefaultVerticalAlign( (TextRenderer::VerticalAlignment) boxTextVerticalAlign->currentIndex() );
+    m_renderer.setLayoutMode( (TextRenderer::LayoutMode) pSettings->m_previewLayoutMode );
     m_renderer.setLyrics( m_lyrics );
     m_renderer.setRenderFont( font );
     m_renderer.setColorBackground( btnVideoColorBg->color() );

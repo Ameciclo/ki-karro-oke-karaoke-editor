@@ -123,6 +123,7 @@ class Editor : public QTextEdit
 		bool        splitLongBlocks(int maxLinesPerBlock);
 		void        updatePlaybackTagHighlight( int tagPosition );
 		qint64       moveToTimingLine( qint64 currentTime, bool forward );
+        qint64      previousTimingForCursor( const QTextCursor& cur ) const;
 
 		// Ensure the cursor is in the middle of the screen if possible
 		void		ensureCursorMiddle();

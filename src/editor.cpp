@@ -1241,8 +1241,15 @@ bool Editor::event ( QEvent * event )
 void Editor::insertImageTag( const QString& file )
 {
 	QTextCursor cur = textCursor();
+    qint64 timing = previousTimingForCursor( cur );
+
+    if ( timing == -1 )
+        timing = 0;
+
+    QString timetag = "[" + markToTime( timing ) + "]";
+
 	cur.beginEditBlock();
-	cur.insertText( "{ IMAGE=" + file + " }" );
+	cur.insertText( timetag + "{ IMAGE=" + file + " }" + timetag );
 	cur.endEditBlock();
 }
 
@@ -1268,6 +1275,19 @@ void Editor::insertBackgroundColorChangeTag(const QString &name)
     cur.beginEditBlock();
     cur.insertText( "{ COLOR=" + name + " }" );
     cur.endEditBlock();
+}
+
+qint64 Editor::previousTimingForCursor( const QTextCursor& cur ) const
+{
+    QString text = toPlainText().left( cur.position() );
+    QRegularExpression pattern( "\\[(\\d+:\\d+\\.\\d+)\\]" );
+    QRegularExpressionMatchIterator it = pattern.globalMatch( text );
+    qint64 timing = -1;
+
+    while ( it.hasNext() )
+        timing = timeToMark( it.next().captured( 1 ) );
+
+    return timing;
 }
 
 void Editor::addMissingTimingMarks()
